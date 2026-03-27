@@ -206,8 +206,9 @@ async function manageProfile() {
 
   console.log(`\n  a. Pausar/Retomar perfil`);
   console.log(`  b. Remover perfil`);
+  console.log(`  c. Alterar dia do perfil (pular/voltar etapa)`);
 
-  const action = await askQuestion('\n  Escolha (a/b): ');
+  const action = await askQuestion('\n  Escolha (a/b/c): ');
 
   if (action.trim().toLowerCase() === 'a') {
     const choice = await askQuestion('  Número do perfil: ');
@@ -244,6 +245,36 @@ async function manageProfile() {
     } else {
       console.log(chalk.gray('\n  Cancelado.\n'));
     }
+  } else if (action.trim().toLowerCase() === 'c') {
+    const choice = await askQuestion('  Número do perfil: ');
+    const idx = parseInt(choice) - 1;
+
+    if (idx < 0 || idx >= entries.length) {
+      console.log(chalk.red('\n  Número inválido.\n'));
+      return;
+    }
+
+    const [alias, data] = entries[idx];
+    const currentDay = data.currentDay || 0;
+
+    console.log(`\n  ${alias} está no dia ${currentDay} (${DAY_LABELS[currentDay] || '?'})`);
+    console.log('');
+    for (let d = 0; d <= 6; d++) {
+      const marker = d === currentDay ? chalk.green(' ← atual') : '';
+      console.log(`  ${d}. ${DAY_LABELS[d]}${marker}`);
+    }
+
+    const newDay = await askQuestion('\n  Mover para qual dia (0-6): ');
+    const dayNum = parseInt(newDay);
+
+    if (isNaN(dayNum) || dayNum < 0 || dayNum > 6) {
+      console.log(chalk.red('\n  Dia inválido.\n'));
+      return;
+    }
+
+    updateProfile(alias, { currentDay: dayNum });
+    console.log(chalk.green(`\n  ${alias} movido para dia ${dayNum} (${DAY_LABELS[dayNum]}).\n`));
+
   } else {
     console.log(chalk.red('\n  Opção inválida.\n'));
   }
