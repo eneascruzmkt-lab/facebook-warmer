@@ -589,118 +589,204 @@ async function loadConfig() {
   try {
     const res    = await fetch(`${API}/api/config`);
     const config = res.ok ? await res.json() : {};
+    renderTemplates(config);
     renderConfigForm(config);
   } catch (err) {
     console.error('loadConfig error:', err);
+    renderTemplates({});
     renderConfigForm({});
   }
 }
 
-const CONFIG_LABELS = {
-  'adspower.apiUrl': 'URL da API do AdsPower',
-  'likes.min': 'Curtidas minimas',
-  'likes.max': 'Curtidas maximas',
-  'friends.max': 'Amigos maximo por dia',
-  'groups.min': 'Grupos minimo',
-  'groups.max': 'Grupos maximo',
-  'reels.durationMin': 'Reels duracao minima (min)',
-  'reels.durationMax': 'Reels duracao maxima (min)',
-  'live.duration': 'Live duracao (min)',
-  'follows.max': 'Seguir paginas maximo por dia',
-  'marketplace.maxTotal': 'Marketplace maximo no total',
-  'session.lazyDayChance': 'Chance de dia preguicoso (0-1)',
-  'session.startTimeVarianceMin': 'Variancia de horario (min)',
-  'session.delayBetweenActions.min': 'Delay entre acoes min (seg)',
-  'session.delayBetweenActions.max': 'Delay entre acoes max (seg)',
-  'session.longPause.min': 'Pausa longa min (seg)',
-  'session.longPause.max': 'Pausa longa max (seg)',
-  'session.longPauseChance': 'Chance de pausa longa (0-1)',
-  'mouse.clickDelay.min': 'Delay de clique min (ms)',
-  'mouse.clickDelay.max': 'Delay de clique max (ms)',
-  'retry.elementNotFound': 'Retentativas elemento',
-  'retry.adspowerReconnect': 'Retentativas AdsPower',
-  'retry.pageLoad': 'Retentativas carregamento',
-};
+/* ─── Config Templates ─────────────────────────────────────── */
 
-const SECTION_LABELS = {
-  adspower: 'AdsPower',
-  likes: 'Curtidas',
-  friends: 'Amigos',
-  groups: 'Grupos',
-  reels: 'Reels',
-  live: 'Lives',
-  follows: 'Seguir Paginas',
-  marketplace: 'Marketplace',
-  session: 'Sessao',
-  mouse: 'Mouse',
-  retry: 'Retentativas',
-  postTemplates: 'Templates de Post',
-};
-
-function flattenConfig(obj, prefix = '') {
-  const result = [];
-  for (const [key, value] of Object.entries(obj)) {
-    const fullKey = prefix ? `${prefix}.${key}` : key;
-    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-      result.push(...flattenConfig(value, fullKey));
-    } else {
-      result.push({ key: fullKey, value });
+const CONFIG_TEMPLATES = [
+  {
+    name: 'Conservador',
+    desc: 'Poucas acoes, lento e seguro. Ideal para perfis novos ou apos bloqueio. Menor risco de deteccao.',
+    color: '#22c55e',
+    config: {
+      likes: { min: 2, max: 5 },
+      friends: { max: 2 },
+      groups: { min: 0, max: 1 },
+      follows: { max: 1 },
+      reels: { durationMin: 10, durationMax: 15 },
+      live: { duration: 120 },
+      marketplace: { maxTotal: 1 },
+      session: {
+        lazyDayChance: 0.35,
+        startTimeVarianceMin: 90,
+        delayBetweenActions: { min: 60, max: 420 },
+        longPause: { min: 600, max: 1200 },
+        longPauseChance: 0.4
+      },
+      mouse: { clickDelay: { min: 150, max: 500 } },
+      retry: { elementNotFound: 2, adspowerReconnect: 3, pageLoad: 2 }
+    }
+  },
+  {
+    name: 'Equilibrado',
+    desc: 'Balanco entre seguranca e velocidade. Comportamento natural de um usuario comum. Recomendado para a maioria.',
+    color: '#3b82f6',
+    config: {
+      likes: { min: 5, max: 10 },
+      friends: { max: 5 },
+      groups: { min: 1, max: 2 },
+      follows: { max: 3 },
+      reels: { durationMin: 15, durationMax: 25 },
+      live: { duration: 120 },
+      marketplace: { maxTotal: 2 },
+      session: {
+        lazyDayChance: 0.2,
+        startTimeVarianceMin: 60,
+        delayBetweenActions: { min: 30, max: 300 },
+        longPause: { min: 300, max: 900 },
+        longPauseChance: 0.3
+      },
+      mouse: { clickDelay: { min: 100, max: 400 } },
+      retry: { elementNotFound: 2, adspowerReconnect: 3, pageLoad: 2 }
+    }
+  },
+  {
+    name: 'Agressivo',
+    desc: 'Mais acoes por sessao, tempos menores entre elas. Para perfis ja aquecidos que precisam de volume. Maior risco.',
+    color: '#f59e0b',
+    config: {
+      likes: { min: 8, max: 15 },
+      friends: { max: 8 },
+      groups: { min: 1, max: 3 },
+      follows: { max: 5 },
+      reels: { durationMin: 20, durationMax: 35 },
+      live: { duration: 60 },
+      marketplace: { maxTotal: 3 },
+      session: {
+        lazyDayChance: 0.1,
+        startTimeVarianceMin: 30,
+        delayBetweenActions: { min: 15, max: 180 },
+        longPause: { min: 120, max: 480 },
+        longPauseChance: 0.15
+      },
+      mouse: { clickDelay: { min: 80, max: 300 } },
+      retry: { elementNotFound: 3, adspowerReconnect: 3, pageLoad: 3 }
     }
   }
-  return result;
+];
+
+function renderTemplates(currentConfig) {
+  const grid = document.getElementById('templates-grid');
+  if (!grid) return;
+
+  grid.innerHTML = CONFIG_TEMPLATES.map((tpl, i) => `
+    <div class="template-card" onclick="applyTemplate(${i})" style="--tpl-color:${tpl.color}">
+      <div class="template-header">
+        <div class="template-dot" style="background:${tpl.color}"></div>
+        <span class="template-name">${tpl.name}</span>
+      </div>
+      <p class="template-desc">${tpl.desc}</p>
+      <div class="template-preview">
+        <div class="template-stat"><span>Curtidas</span><span>${tpl.config.likes.min}-${tpl.config.likes.max}</span></div>
+        <div class="template-stat"><span>Amigos/dia</span><span>ate ${tpl.config.friends.max}</span></div>
+        <div class="template-stat"><span>Grupos</span><span>${tpl.config.groups.min}-${tpl.config.groups.max}</span></div>
+        <div class="template-stat"><span>Seguir</span><span>ate ${tpl.config.follows.max}</span></div>
+        <div class="template-stat"><span>Reels</span><span>${tpl.config.reels.durationMin}-${tpl.config.reels.durationMax}min</span></div>
+        <div class="template-stat"><span>Live</span><span>${tpl.config.live.duration}min</span></div>
+      </div>
+      <div class="template-apply">Clique para aplicar</div>
+    </div>
+  `).join('');
+}
+
+async function applyTemplate(index) {
+  const tpl = CONFIG_TEMPLATES[index];
+  if (!tpl) return;
+
+  // Merge template config with current (keep adspower url and postTemplates)
+  try {
+    const res = await fetch(`${API}/api/config`);
+    const current = res.ok ? await res.json() : {};
+
+    const merged = {
+      adspower: current.adspower || { apiUrl: 'http://local.adspower.net:50325' },
+      ...tpl.config,
+      postTemplates: current.postTemplates || ['Bom dia! Mais um dia de trabalho.']
+    };
+
+    const saveRes = await fetch(`${API}/api/config`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(merged)
+    });
+    if (!saveRes.ok) throw new Error(saveRes.statusText);
+
+    renderConfigForm(merged);
+    alert(`Template "${tpl.name}" aplicado com sucesso!`);
+  } catch (err) {
+    alert('Erro ao aplicar template: ' + err.message);
+  }
+}
+
+/* ─── Config Form (single page) ────────────────────────────── */
+
+const CONFIG_FIELDS = [
+  { section: 'Interacoes', desc: 'Quantidade de acoes que o bot faz por sessao', fields: [
+    { key: 'likes.min', label: 'Curtidas por sessao (minimo)', type: 'number' },
+    { key: 'likes.max', label: 'Curtidas por sessao (maximo)', type: 'number' },
+    { key: 'friends.max', label: 'Amigos adicionados por dia (maximo)', type: 'number' },
+    { key: 'groups.min', label: 'Grupos por dia (minimo)', type: 'number' },
+    { key: 'groups.max', label: 'Grupos por dia (maximo)', type: 'number' },
+    { key: 'follows.max', label: 'Paginas seguidas por dia (maximo)', type: 'number' },
+    { key: 'marketplace.maxTotal', label: 'Marketplace no processo inteiro (maximo)', type: 'number' },
+  ]},
+  { section: 'Tempo de Uso', desc: 'Quanto tempo o bot passa em cada atividade', fields: [
+    { key: 'reels.durationMin', label: 'Assistir reels (minimo em minutos)', type: 'number' },
+    { key: 'reels.durationMax', label: 'Assistir reels (maximo em minutos)', type: 'number' },
+    { key: 'live.duration', label: 'Assistir live (minutos)', type: 'number' },
+  ]},
+  { section: 'Velocidade e Pausas', desc: 'Controla quao rapido ou devagar o bot age entre acoes', fields: [
+    { key: 'session.delayBetweenActions.min', label: 'Espera entre acoes (minimo em segundos)', type: 'number' },
+    { key: 'session.delayBetweenActions.max', label: 'Espera entre acoes (maximo em segundos)', type: 'number' },
+    { key: 'session.longPause.min', label: 'Pausa longa (minimo em segundos)', type: 'number' },
+    { key: 'session.longPause.max', label: 'Pausa longa (maximo em segundos)', type: 'number' },
+    { key: 'session.longPauseChance', label: 'Chance de pausa longa (0 = nunca, 1 = sempre)', type: 'number', step: '0.05' },
+    { key: 'session.lazyDayChance', label: 'Chance de dia preguicoso (0 = nunca, 1 = sempre)', type: 'number', step: '0.05' },
+    { key: 'session.startTimeVarianceMin', label: 'Variacao de horario de inicio (minutos)', type: 'number' },
+  ]},
+  { section: 'Textos para Publicacao', desc: 'Frases que o bot usa ao publicar posts na pagina', fields: [
+    { key: 'postTemplates', label: 'Um texto por linha', type: 'textarea' },
+  ]},
+];
+
+function getNestedValue(obj, path) {
+  return path.split('.').reduce((o, k) => o?.[k], obj);
 }
 
 function renderConfigForm(config) {
-  const grid = document.getElementById('config-form');
-  if (!grid) return;
+  const container = document.getElementById('config-form');
+  if (!container) return;
 
-  const flat = flattenConfig(config);
-
-  const sections = {};
-  for (const { key, value } of flat) {
-    const section = key.split('.')[0];
-    if (!sections[section]) sections[section] = [];
-    sections[section].push({ key, value });
-  }
-
-  grid.innerHTML = Object.entries(sections).map(([section, fields]) => {
-    const sectionName = SECTION_LABELS[section] || section;
-
-    if (section === 'postTemplates') {
-      const templates = config.postTemplates || [];
-      return `<div class="config-section">
-        <h3>${sectionName}</h3>
-        <div class="form-group">
-          <label>Templates (um por linha)</label>
-          <textarea id="cfg-postTemplates" data-config-key="postTemplates" rows="5" style="width:100%;background:#0b0b1e;color:#e8e8f0;border:1px solid #1c1c40;border-radius:6px;padding:8px;font-family:inherit;resize:vertical;">${templates.join('\n')}</textarea>
-        </div>
-      </div>`;
-    }
-
-    return `<div class="config-section">
-      <h3>${sectionName}</h3>
-      ${fields.map(({ key, value }) => {
-        const label = CONFIG_LABELS[key] || key.split('.').slice(1).join(' ');
-        return `<div class="form-group">
-          <label>${label}</label>
-          ${renderConfigInput(key, value)}
+  container.innerHTML = CONFIG_FIELDS.map(section => `
+    <div class="config-row-section">
+      <div class="config-row-header">
+        <h3>${section.section}</h3>
+        <p>${section.desc}</p>
+      </div>
+      ${section.fields.map(f => {
+        const val = getNestedValue(config, f.key);
+        if (f.type === 'textarea') {
+          const textVal = Array.isArray(val) ? val.join('\n') : (val || '');
+          return `<div class="config-row">
+            <div class="config-row-label">${f.label}</div>
+            <textarea data-config-key="${f.key}" rows="4" class="config-textarea">${textVal}</textarea>
+          </div>`;
+        }
+        const step = f.step ? `step="${f.step}"` : '';
+        return `<div class="config-row">
+          <div class="config-row-label">${f.label}</div>
+          <input type="number" data-config-key="${f.key}" value="${val ?? ''}" ${step} class="config-input">
         </div>`;
       }).join('')}
-    </div>`;
-  }).join('');
-}
-
-function renderConfigInput(key, value) {
-  if (typeof value === 'boolean') {
-    return `<select id="cfg-${key}" data-config-key="${key}">
-      <option value="true"  ${value ? 'selected' : ''}>Sim</option>
-      <option value="false" ${!value ? 'selected' : ''}>Nao</option>
-    </select>`;
-  }
-  if (typeof value === 'number') {
-    return `<input type="number" id="cfg-${key}" data-config-key="${key}" value="${value}">`;
-  }
-  return `<input type="text" id="cfg-${key}" data-config-key="${key}" value="${escapeAttr(String(value ?? ''))}">`;
+    </div>
+  `).join('');
 }
 
 async function saveConfig() {

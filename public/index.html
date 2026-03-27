@@ -113,11 +113,28 @@
         <div class="page-title">
           <div>
             <h1>Ajustes do Bot</h1>
-            <p class="page-desc">Configure limites, tempos e comportamentos do aquecimento</p>
+            <p class="page-desc">Escolha um template pronto ou personalize cada detalhe do comportamento</p>
           </div>
           <button class="btn btn-primary" onclick="saveConfig()">Salvar Alteracoes</button>
         </div>
-        <div class="config-grid" id="config-form"></div>
+
+        <!-- Templates -->
+        <div class="card" style="margin-bottom:24px;">
+          <div class="card-header">
+            <h2>Templates Prontos</h2>
+            <p class="card-desc">Clique em um template para aplicar automaticamente. Voce pode ajustar depois.</p>
+          </div>
+          <div class="templates-grid" id="templates-grid"></div>
+        </div>
+
+        <!-- Custom config -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Ajuste Manual</h2>
+            <p class="card-desc">Personalize cada parametro individualmente</p>
+          </div>
+          <div class="config-form-single" id="config-form"></div>
+        </div>
       </div>
     </main>
   </div>
