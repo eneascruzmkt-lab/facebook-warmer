@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FB Warmer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <nav class="sidebar">
+      <div class="logo">🔥</div>
+      <div class="nav-items">
+        <button class="nav-item active" data-page="dashboard" title="Dashboard">📊</button>
+        <button class="nav-item" data-page="profiles" title="Perfis">👤</button>
+        <button class="nav-item" data-page="logs" title="Logs">📝</button>
+        <button class="nav-item" data-page="config" title="Config">⚙️</button>
+      </div>
+    </nav>
+    <main class="content">
+      <!-- Dashboard Page -->
+      <div class="page active" id="page-dashboard">
+        <h1>Dashboard</h1>
+        <div class="stats-grid" id="stats-cards">
+          <!-- Filled by JS -->
+        </div>
+        <div class="two-columns">
+          <div class="card">
+            <h2>Progresso dos Perfis</h2>
+            <div id="progress-bars"><!-- Filled by JS --></div>
+          </div>
+          <div class="card">
+            <h2>Log em Tempo Real</h2>
+            <div class="log-stream" id="live-log"><!-- Filled by SSE --></div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Ações por Dia</h2>
+          <div class="chart" id="actions-chart"><!-- Filled by JS --></div>
+        </div>
+      </div>
+
+      <!-- Profiles Page -->
+      <div class="page" id="page-profiles">
+        <div class="page-header">
+          <h1>Perfis</h1>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="runNextProfile()">▶ Rodar Próximo</button>
+            <button class="btn btn-success" onclick="showAddModal()">+ Adicionar</button>
+          </div>
+        </div>
+        <table class="profiles-table">
+          <thead>
+            <tr>
+              <th>Perfil</th>
+              <th>AdsPower ID</th>
+              <th>Dia</th>
+              <th>Próximo Passo</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="profiles-tbody"><!-- Filled by JS --></tbody>
+        </table>
+      </div>
+
+      <!-- Logs Page -->
+      <div class="page" id="page-logs">
+        <h1>Logs</h1>
+        <div class="filters">
+          <select id="filter-profile"><option value="">Todos os perfis</option></select>
+          <select id="filter-type">
+            <option value="">Todos os tipos</option>
+            <option value="success">Sucesso</option>
+            <option value="error">Erro</option>
+            <option value="manual">Manual</option>
+          </select>
+        </div>
+        <div class="card">
+          <div class="log-entries" id="log-entries"><!-- Filled by JS --></div>
+        </div>
+      </div>
+
+      <!-- Config Page -->
+      <div class="page" id="page-config">
+        <div class="page-header">
+          <h1>Configurações</h1>
+          <button class="btn btn-primary" onclick="saveConfig()">Salvar</button>
+        </div>
+        <div class="config-grid" id="config-form"><!-- Filled by JS --></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add Profile Modal -->
+  <div class="modal-overlay" id="add-modal" style="display:none;">
+    <div class="modal">
+      <h2>Adicionar Perfil</h2>
+      <div class="form-group">
+        <label>ID do AdsPower</label>
+        <input type="text" id="new-adspower-id" placeholder="Ex: k1au8ng6">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="hideAddModal()">Cancelar</button>
+        <button class="btn btn-success" onclick="addProfile()">Adicionar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
