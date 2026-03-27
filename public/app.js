@@ -16,6 +16,7 @@ const DAY_LABELS = {
 
 let allLogs = [];    // cache for filter on Logs page
 let sseSource = null;
+let runningProfiles = new Set();  // track which profiles are currently running
 
 /* ═══════════════════════════════════════════════════════════════
    NAVIGATION
@@ -160,11 +161,26 @@ function connectSSE() {
       let entry;
       try { entry = JSON.parse(event.data); } catch { return; }
 
+      // Detect profile completed or errored out
+      if (entry.type === 'completed' || entry.type === 'error') {
+        if (entry.profile && runningProfiles.has(entry.profile)) {
+          runningProfiles.delete(entry.profile);
+          loadProfiles();
+          loadDashboard();
+        }
+      }
+
       const liveLog = document.getElementById('live-log');
       if (!liveLog) return;
 
+      // Add profile name to log entry for clarity
+      const displayEntry = { ...entry };
+      if (entry.profile) {
+        displayEntry.msg = `[${entry.profile}] ${entry.msg || ''}`;
+      }
+
       const div = document.createElement('div');
-      div.innerHTML = renderLogEntry(entry);
+      div.innerHTML = renderLogEntry(displayEntry);
       liveLog.appendChild(div.firstElementChild);
 
       // Keep max 100 entries in the live log
@@ -220,12 +236,22 @@ function renderProfileCard(alias, data) {
   const label = DAY_LABELS[day] || '?';
   const pct = day > 6 ? 100 : Math.round((day / 6) * 100);
   const color = day > 6 ? '#a855f7' : (pct > 60 ? '#00ff88' : '#00d4ff');
-  const statusBadge = status === 'active'
-    ? '<span class="badge badge-active">Ativo</span>'
-    : '<span class="badge badge-paused">Pausado</span>';
   const isComplete = day > 6;
+  const isRunning = runningProfiles.has(alias);
 
-  return `<div class="profile-card">
+  let statusBadge;
+  if (isRunning) {
+    statusBadge = '<span class="badge badge-running">Rodando...</span>';
+  } else if (status === 'active') {
+    statusBadge = '<span class="badge badge-active">Ativo</span>';
+  } else {
+    statusBadge = '<span class="badge badge-paused">Pausado</span>';
+  }
+
+  const disabledAttr = isRunning ? 'disabled' : '';
+  const cardClass = isRunning ? 'profile-card running' : 'profile-card';
+
+  return `<div class="${cardClass}">
     <div class="profile-card-header">
       <span class="profile-card-name">${alias}</span>
       <span class="profile-card-id">${data.adspowerId || ''}</span>
@@ -250,10 +276,12 @@ function renderProfileCard(alias, data) {
       </div>
     </div>
     <div class="profile-card-actions">
-      ${!isComplete ? `<button class="btn btn-sm btn-primary" onclick="runProfile('${alias}')" title="Rodar dia ${day}">▶ Rodar</button>` : ''}
-      <button class="btn btn-sm btn-ghost" onclick="toggleProfile('${alias}')" title="${status === 'active' ? 'Pausar' : 'Retomar'}">${status === 'active' ? '⏸ Pausar' : '▶ Retomar'}</button>
-      <button class="btn btn-sm btn-ghost" onclick="changeDay('${alias}', ${day})" title="Alterar dia">✏️ Dia</button>
-      <button class="btn btn-sm btn-danger" onclick="deleteProfile('${alias}')" title="Remover">🗑️</button>
+      ${isRunning
+        ? `<button class="btn btn-sm btn-primary" disabled style="opacity:0.5;cursor:not-allowed;flex:2;">⏳ Rodando Dia ${day}...</button>`
+        : (!isComplete ? `<button class="btn btn-sm btn-primary" onclick="runProfile('${alias}')" title="Rodar dia ${day}">▶ Rodar</button>` : '')}
+      <button class="btn btn-sm btn-ghost" onclick="toggleProfile('${alias}')" ${disabledAttr} title="${status === 'active' ? 'Pausar' : 'Retomar'}">${status === 'active' ? '⏸ Pausar' : '▶ Retomar'}</button>
+      <button class="btn btn-sm btn-ghost" onclick="changeDay('${alias}', ${day})" ${disabledAttr} title="Alterar dia">✏️ Dia</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteProfile('${alias}')" ${disabledAttr} title="Remover">🗑️</button>
     </div>
   </div>`;
 }
@@ -369,13 +397,18 @@ async function deleteProfile(alias) {
 }
 
 async function runProfile(alias) {
+  if (runningProfiles.has(alias)) return;
+
   try {
     const res = await fetch(`${API}/api/profiles/${encodeURIComponent(alias)}/run`, {
       method: 'POST'
     });
-    if (!res.ok) throw new Error(res.statusText);
-    const data = await res.json();
-    console.log('runProfile result:', data);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert('Erro: ' + (err.error || res.statusText));
+      return;
+    }
+    runningProfiles.add(alias);
     loadProfiles();
   } catch (err) {
     alert('Erro ao rodar perfil: ' + err.message);

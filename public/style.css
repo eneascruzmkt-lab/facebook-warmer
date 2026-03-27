@@ -547,6 +547,18 @@ html, body {
   border: 1px solid rgba(136, 136, 136, 0.25);
 }
 
+.badge-running {
+  background: rgba(0, 212, 255, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
 /* ─── Buttons ───────────────────────────────────────────────── */
 .btn {
   display: inline-flex;
