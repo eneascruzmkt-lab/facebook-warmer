@@ -4,78 +4,121 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FB Warmer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="app">
     <nav class="sidebar">
-      <div class="logo">🔥</div>
+      <div class="sidebar-brand">FBW</div>
       <div class="nav-items">
-        <button class="nav-item active" data-page="dashboard" title="Dashboard">📊</button>
-        <button class="nav-item" data-page="profiles" title="Perfis">👤</button>
-        <button class="nav-item" data-page="logs" title="Logs">📝</button>
-        <button class="nav-item" data-page="config" title="Config">⚙️</button>
+        <button class="nav-item active" data-page="dashboard">
+          <span class="nav-icon" id="icon-dashboard"></span>
+          <span class="nav-label">Painel</span>
+        </button>
+        <button class="nav-item" data-page="profiles">
+          <span class="nav-icon" id="icon-profiles"></span>
+          <span class="nav-label">Perfis</span>
+        </button>
+        <button class="nav-item" data-page="logs">
+          <span class="nav-icon" id="icon-logs"></span>
+          <span class="nav-label">Atividade</span>
+        </button>
+        <button class="nav-item" data-page="config">
+          <span class="nav-icon" id="icon-config"></span>
+          <span class="nav-label">Ajustes</span>
+        </button>
       </div>
     </nav>
+
     <main class="content">
-      <!-- Dashboard Page -->
+      <!-- Dashboard -->
       <div class="page active" id="page-dashboard">
-        <h1>Dashboard</h1>
-        <div class="stats-grid" id="stats-cards">
-          <!-- Filled by JS -->
+        <div class="page-title">
+          <h1>Painel de Controle</h1>
+          <p class="page-desc">Acompanhe o aquecimento dos seus perfis em tempo real</p>
         </div>
+        <div class="stats-grid" id="stats-cards"></div>
         <div class="two-columns">
           <div class="card">
-            <h2>Progresso dos Perfis</h2>
-            <div id="progress-bars"><!-- Filled by JS --></div>
+            <div class="card-header">
+              <h2>Progresso dos Perfis</h2>
+              <p class="card-desc">Cada perfil passa por 7 etapas de aquecimento (dia 0 a 6)</p>
+            </div>
+            <div id="progress-bars"></div>
           </div>
           <div class="card">
-            <h2>Log em Tempo Real</h2>
-            <div class="log-stream" id="live-log"><!-- Filled by SSE --></div>
+            <div class="card-header">
+              <h2>Atividade ao Vivo</h2>
+              <p class="card-desc">Acoes sendo executadas agora pelo bot</p>
+            </div>
+            <div class="log-stream" id="live-log"></div>
           </div>
         </div>
         <div class="card">
-          <h2>Ações por Dia</h2>
-          <div class="chart" id="actions-chart"><!-- Filled by JS --></div>
+          <div class="card-header">
+            <h2>Acoes Realizadas</h2>
+            <p class="card-desc">Total de acoes executadas por dia da semana</p>
+          </div>
+          <div class="chart" id="actions-chart"></div>
         </div>
       </div>
 
-      <!-- Profiles Page -->
+      <!-- Profiles -->
       <div class="page" id="page-profiles">
-        <div class="page-header">
-          <h1>Perfis</h1>
+        <div class="page-title">
+          <div>
+            <h1>Gerenciar Perfis</h1>
+            <p class="page-desc">Adicione perfis do AdsPower e acompanhe cada etapa do aquecimento</p>
+          </div>
           <div class="page-actions">
-            <button class="btn btn-primary" onclick="runNextProfile()">▶ Rodar Próximo</button>
-            <button class="btn btn-success" onclick="showAddModal()">+ Adicionar</button>
+            <button class="btn btn-secondary" onclick="runNextProfile()">Rodar Proximo</button>
+            <button class="btn btn-primary" onclick="showAddModal()">Novo Perfil</button>
           </div>
         </div>
-        <div class="profiles-grid" id="profiles-grid"><!-- Filled by JS --></div>
+        <div class="profiles-grid" id="profiles-grid"></div>
       </div>
 
-      <!-- Logs Page -->
+      <!-- Logs -->
       <div class="page" id="page-logs">
-        <h1>Logs</h1>
+        <div class="page-title">
+          <div>
+            <h1>Historico de Atividade</h1>
+            <p class="page-desc">Tudo que o bot fez, organizado por perfil e tipo de acao</p>
+          </div>
+        </div>
         <div class="filters">
-          <select id="filter-profile"><option value="">Todos os perfis</option></select>
-          <select id="filter-type">
-            <option value="">Todos os tipos</option>
-            <option value="success">Sucesso</option>
-            <option value="error">Erro</option>
-            <option value="manual">Manual</option>
-          </select>
+          <div class="filter-group">
+            <label>Perfil</label>
+            <select id="filter-profile"><option value="">Todos</option></select>
+          </div>
+          <div class="filter-group">
+            <label>Tipo</label>
+            <select id="filter-type">
+              <option value="">Todos</option>
+              <option value="success">Concluido</option>
+              <option value="error">Erro</option>
+              <option value="manual">Manual</option>
+              <option value="progress">Em andamento</option>
+            </select>
+          </div>
         </div>
         <div class="card">
-          <div class="log-entries" id="log-entries"><!-- Filled by JS --></div>
+          <div class="log-entries" id="log-entries"></div>
         </div>
       </div>
 
-      <!-- Config Page -->
+      <!-- Config -->
       <div class="page" id="page-config">
-        <div class="page-header">
-          <h1>Configurações</h1>
-          <button class="btn btn-primary" onclick="saveConfig()">Salvar</button>
+        <div class="page-title">
+          <div>
+            <h1>Ajustes do Bot</h1>
+            <p class="page-desc">Configure limites, tempos e comportamentos do aquecimento</p>
+          </div>
+          <button class="btn btn-primary" onclick="saveConfig()">Salvar Alteracoes</button>
         </div>
-        <div class="config-grid" id="config-form"><!-- Filled by JS --></div>
+        <div class="config-grid" id="config-form"></div>
       </div>
     </main>
   </div>
@@ -83,14 +126,49 @@
   <!-- Add Profile Modal -->
   <div class="modal-overlay" id="add-modal" style="display:none;">
     <div class="modal">
-      <h2>Adicionar Perfil</h2>
+      <div class="modal-header">
+        <h2>Adicionar Novo Perfil</h2>
+        <button class="btn-icon" onclick="hideAddModal()" id="close-add-modal"></button>
+      </div>
+      <p class="modal-desc">Informe o ID do perfil no AdsPower. Voce encontra esse ID na lista de perfis do AdsPower.</p>
       <div class="form-group">
-        <label>ID do AdsPower</label>
+        <label>ID do Perfil no AdsPower</label>
         <input type="text" id="new-adspower-id" placeholder="Ex: k1au8ng6">
       </div>
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="hideAddModal()">Cancelar</button>
-        <button class="btn btn-success" onclick="addProfile()">Adicionar</button>
+        <button class="btn btn-primary" onclick="addProfile()">Adicionar Perfil</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Day Modal -->
+  <div class="modal-overlay" id="day-modal" style="display:none;">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <h2>Alterar Etapa do Perfil</h2>
+        <button class="btn-icon" onclick="hideDayModal()" id="close-day-modal"></button>
+      </div>
+      <p class="modal-desc">Selecione em qual etapa do processo este perfil deve estar. Use isso para pular etapas ja feitas ou voltar caso precise repetir.</p>
+      <div class="day-stepper" id="day-stepper"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="hideDayModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="confirmDayChange()">Confirmar Alteracao</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal-overlay" id="delete-modal" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Remover Perfil</h2>
+        <button class="btn-icon" onclick="hideDeleteModal()" id="close-delete-modal"></button>
+      </div>
+      <p class="modal-desc">Tem certeza que deseja remover o perfil <strong id="delete-profile-name"></strong>? Todo o historico de aquecimento deste perfil sera perdido. Esta acao nao pode ser desfeita.</p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="hideDeleteModal()">Cancelar</button>
+        <button class="btn btn-danger" onclick="confirmDelete()">Sim, Remover Perfil</button>
       </div>
     </div>
   </div>

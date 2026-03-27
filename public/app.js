@@ -1,5 +1,22 @@
 'use strict';
 
+/* ─── SVG Icons ────────────────────────────────────────────── */
+const ICONS = {
+  dashboard: '<svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>',
+  profiles: '<svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20"><circle cx="10" cy="6" r="4"/><path d="M2 17c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>',
+  logs: '<svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20"><path d="M4 4h12v1H4zM4 8h10v1H4zM4 12h12v1H4zM4 16h8v1H4z"/></svg>',
+  config: '<svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20"><circle cx="10" cy="10" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 1v3M10 16v3M1 10h3M16 10h3M3.5 3.5l2 2M14.5 14.5l2 2M3.5 16.5l2-2M14.5 5.5l2-2" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>',
+  play: '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M6 4l10 6-10 6z"/></svg>',
+  pause: '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><rect x="5" y="3" width="3" height="14" rx="1"/><rect x="12" y="3" width="3" height="14" rx="1"/></svg>',
+  trash: '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M7 3V2h6v1h4v2H3V3h4zM4 7h12l-1 11H5L4 7z"/></svg>',
+  edit: '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M13.5 3.5l3 3L7 16H4v-3l9.5-9.5z"/></svg>',
+  plus: '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M10 3v14M3 10h14" stroke="currentColor" stroke-width="2" fill="none"/></svg>',
+  close: '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" fill="none"/></svg>',
+  check: '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M4 10l4 4 8-8" stroke="currentColor" stroke-width="2" fill="none"/></svg>',
+  warning: '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M10 2L1 18h18L10 2z" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="10" y1="8" x2="10" y2="13" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="15.5" r="0.8"/></svg>',
+  spinner: '<svg viewBox="0 0 20 20" width="16" height="16" class="spin"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="30 14" stroke-linecap="round"/></svg>',
+};
+
 /* ─── Globals ───────────────────────────────────────────────── */
 const API = '';  // same origin
 
@@ -8,34 +25,35 @@ const DAY_LABELS = {
   1: 'Criar perfil (celular)',
   2: 'Aquecimento PC',
   3: '2FA + aquecimento',
-  4: 'Criar página + social',
+  4: 'Criar pagina + social',
   5: 'BM + aquecimento',
   6: 'Segunda BM',
-  7: 'Concluído'
+  7: 'Concluido'
 };
 
-let allLogs = [];    // cache for filter on Logs page
+let allLogs = [];
 let sseSource = null;
-let runningProfiles = new Set();  // track which profiles are currently running
+let runningProfiles = new Set();
+
+// Modal state
+let dayModalAlias = null;
+let dayModalSelected = null;
+let deleteAlias = null;
 
 /* ═══════════════════════════════════════════════════════════════
    NAVIGATION
 ═══════════════════════════════════════════════════════════════ */
 
 function switchPage(page) {
-  // Hide all pages
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
-  // Show target page
   const pageEl = document.getElementById('page-' + page);
   if (pageEl) pageEl.classList.add('active');
 
-  // Highlight nav button
   const navBtn = document.querySelector(`.nav-item[data-page="${page}"]`);
   if (navBtn) navBtn.classList.add('active');
 
-  // Load data for the page
   switch (page) {
     case 'dashboard': loadDashboard(); break;
     case 'profiles':  loadProfiles();  break;
@@ -77,17 +95,16 @@ function renderStatCards(stats, profiles) {
   const actToday = stats.actionsToday ?? stats.actions_today ?? 0;
 
   const cards = [
-    { label: 'Total Perfis',      number: total,    color: '#00d4ff', icon: '👤' },
-    { label: 'Ativos',            number: active,   color: '#00ff88', icon: '✅' },
-    { label: 'Concluídos',        number: done,     color: '#a855f7', icon: '🏁' },
-    { label: 'Ações Hoje',        number: actToday, color: '#ff8c00', icon: '⚡' },
+    { label: 'Total de Perfis',    number: total,    color: '#3b82f6' },
+    { label: 'Perfis Ativos',      number: active,   color: '#22c55e' },
+    { label: 'Concluidos',         number: done,     color: '#8b5cf6' },
+    { label: 'Acoes Hoje',         number: actToday, color: '#f59e0b' },
   ];
 
   const grid = document.getElementById('stats-cards');
   if (!grid) return;
   grid.innerHTML = cards.map(c => `
     <div class="stat-card" style="--stat-color:${c.color}">
-      <span class="stat-icon">${c.icon}</span>
       <div class="stat-number">${c.number}</div>
       <div class="stat-label">${c.label}</div>
     </div>
@@ -100,7 +117,7 @@ function renderProgressBars(profiles) {
 
   const entries = Object.entries(profiles || {});
   if (!entries.length) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div>Nenhum perfil cadastrado</div>';
+    container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">${ICONS.profiles}</div>Nenhum perfil cadastrado</div>`;
     return;
   }
 
@@ -110,14 +127,14 @@ function renderProgressBars(profiles) {
 function renderProgress(alias, data) {
   const day   = data.currentDay || 0;
   const pct   = Math.min(Math.round((day / 6) * 100), 100);
-  const color = day > 6 ? '#a855f7' : (pct > 60 ? '#00ff88' : '#00d4ff');
+  const color = day > 6 ? '#8b5cf6' : (pct > 60 ? '#22c55e' : '#3b82f6');
   return `<div class="progress-item">
     <div class="progress-label">
       <span>${alias}</span>
-      <span style="color:${color}">${day > 6 ? 'Concluído' : `Dia ${day}/6`}</span>
+      <span style="color:${color}">${day > 6 ? 'Concluido' : `Dia ${day}/6`}</span>
     </div>
     <div class="progress-bar">
-      <div class="progress-fill" style="width:${pct}%;background:linear-gradient(90deg,#00d4ff,${color})"></div>
+      <div class="progress-fill" style="width:${pct}%;background:linear-gradient(90deg,#3b82f6,${color})"></div>
     </div>
   </div>`;
 }
@@ -126,12 +143,11 @@ function renderActionsChart(stats) {
   const container = document.getElementById('actions-chart');
   if (!container) return;
 
-  // Support both snake_case and camelCase from API
   const byDay = stats.actionsByDay || stats.actions_by_day || {};
   const labels = Object.keys(DAY_LABELS).map(Number).filter(k => k <= 6);
 
   if (!Object.keys(byDay).length) {
-    container.innerHTML = '<div class="empty-state" style="height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column"><div class="empty-state-icon">📊</div>Sem dados ainda</div>';
+    container.innerHTML = `<div class="empty-state" style="height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column"><div class="empty-state-icon">${ICONS.logs}</div>Sem dados ainda</div>`;
     return;
   }
 
@@ -143,7 +159,7 @@ function renderActionsChart(stats) {
     const short = DAY_LABELS[k].split(' ').slice(0, 2).join(' ');
     return `<div class="chart-bar-wrap">
       <div class="chart-value">${values[i] || ''}</div>
-      <div class="chart-bar" style="height:${pct}%" title="${DAY_LABELS[k]}: ${values[i]} ações"></div>
+      <div class="chart-bar" style="height:${pct}%" title="${DAY_LABELS[k]}: ${values[i]} acoes"></div>
       <div class="chart-label">${short}</div>
     </div>`;
   }).join('');
@@ -161,7 +177,6 @@ function connectSSE() {
       let entry;
       try { entry = JSON.parse(event.data); } catch { return; }
 
-      // Detect profile completed or errored out
       if (entry.type === 'completed' || entry.type === 'error') {
         if (entry.profile && runningProfiles.has(entry.profile)) {
           runningProfiles.delete(entry.profile);
@@ -173,7 +188,6 @@ function connectSSE() {
       const liveLog = document.getElementById('live-log');
       if (!liveLog) return;
 
-      // Add profile name to log entry for clarity
       const displayEntry = { ...entry };
       if (entry.profile) {
         displayEntry.msg = `[${entry.profile}] ${entry.msg || ''}`;
@@ -183,17 +197,14 @@ function connectSSE() {
       div.innerHTML = renderLogEntry(displayEntry);
       liveLog.appendChild(div.firstElementChild);
 
-      // Keep max 100 entries in the live log
       while (liveLog.children.length > 100) {
         liveLog.removeChild(liveLog.firstChild);
       }
 
-      // Auto-scroll
       liveLog.scrollTop = liveLog.scrollHeight;
     };
 
     sseSource.onerror = () => {
-      // Reconnect after 5 s on error
       sseSource.close();
       setTimeout(connectSSE, 5000);
     };
@@ -223,7 +234,7 @@ function renderProfilesTable(profiles) {
 
   const entries = Object.entries(profiles || {});
   if (!entries.length) {
-    grid.innerHTML = `<div class="empty-state"><div class="empty-state-icon">👤</div>Nenhum perfil cadastrado ainda.<br>Clique em "+ Adicionar" para começar.</div>`;
+    grid.innerHTML = `<div class="empty-state"><div class="empty-state-icon">${ICONS.profiles}</div>Nenhum perfil cadastrado ainda.<br>Clique em "Novo Perfil" para comecar.</div>`;
     return;
   }
 
@@ -234,14 +245,15 @@ function renderProfileCard(alias, data) {
   const day = data.currentDay || 0;
   const status = data.status || 'active';
   const label = DAY_LABELS[day] || '?';
-  const pct = day > 6 ? 100 : Math.round((day / 6) * 100);
-  const color = day > 6 ? '#a855f7' : (pct > 60 ? '#00ff88' : '#00d4ff');
   const isComplete = day > 6;
   const isRunning = runningProfiles.has(alias);
 
+  // Status badge
   let statusBadge;
   if (isRunning) {
-    statusBadge = '<span class="badge badge-running">Rodando...</span>';
+    statusBadge = `<span class="badge badge-running">${ICONS.spinner} Processando...</span>`;
+  } else if (isComplete) {
+    statusBadge = `<span class="badge badge-done">${ICONS.check} Concluido</span>`;
   } else if (status === 'active') {
     statusBadge = '<span class="badge badge-active">Ativo</span>';
   } else {
@@ -250,6 +262,31 @@ function renderProfileCard(alias, data) {
 
   const disabledAttr = isRunning ? 'disabled' : '';
   const cardClass = isRunning ? 'profile-card running' : 'profile-card';
+
+  // Progress dots
+  let dotsHtml = '';
+  for (let i = 0; i <= 6; i++) {
+    let cls = 'profile-dot';
+    if (isComplete) {
+      cls += ' completed';
+    } else if (i < day) {
+      cls += ' filled';
+    } else if (i === day) {
+      cls += ' current';
+    }
+    dotsHtml += `<div class="${cls}" title="Dia ${i}: ${DAY_LABELS[i]}"></div>`;
+  }
+
+  // Action buttons with SVG icons
+  let runBtn = '';
+  if (isRunning) {
+    runBtn = `<button class="btn btn-sm btn-primary" disabled>${ICONS.spinner} Rodando Dia ${day}...</button>`;
+  } else if (!isComplete) {
+    runBtn = `<button class="btn btn-sm btn-primary" onclick="runProfile('${alias}')" title="Executar dia ${day}">${ICONS.play} Rodar</button>`;
+  }
+
+  const toggleLabel = status === 'active' ? 'Pausar' : 'Retomar';
+  const toggleIcon = status === 'active' ? ICONS.pause : ICONS.play;
 
   return `<div class="${cardClass}">
     <div class="profile-card-header">
@@ -263,25 +300,15 @@ function renderProfileCard(alias, data) {
       </div>
       <div class="profile-card-row">
         <span class="profile-card-label">Etapa Atual</span>
-        <span class="profile-card-value" style="color:${color}">${isComplete ? 'Concluído' : `Dia ${day} — ${label}`}</span>
-      </div>
-      <div class="profile-card-row">
-        <span class="profile-card-label">Progresso</span>
-        <span class="profile-card-value" style="color:${color}">${pct}%</span>
+        <span class="profile-card-value">${isComplete ? 'Concluido' : `Dia ${day} - ${label}`}</span>
       </div>
     </div>
-    <div class="profile-card-progress">
-      <div class="progress-bar">
-        <div class="progress-fill" style="width:${pct}%;background:linear-gradient(90deg,#00d4ff,${color})"></div>
-      </div>
-    </div>
+    <div class="profile-card-dots">${dotsHtml}</div>
     <div class="profile-card-actions">
-      ${isRunning
-        ? `<button class="btn btn-sm btn-primary" disabled style="opacity:0.5;cursor:not-allowed;flex:2;">⏳ Rodando Dia ${day}...</button>`
-        : (!isComplete ? `<button class="btn btn-sm btn-primary" onclick="runProfile('${alias}')" title="Rodar dia ${day}">▶ Rodar</button>` : '')}
-      <button class="btn btn-sm btn-ghost" onclick="toggleProfile('${alias}')" ${disabledAttr} title="${status === 'active' ? 'Pausar' : 'Retomar'}">${status === 'active' ? '⏸ Pausar' : '▶ Retomar'}</button>
-      <button class="btn btn-sm btn-ghost" onclick="changeDay('${alias}', ${day})" ${disabledAttr} title="Alterar dia">✏️ Dia</button>
-      <button class="btn btn-sm btn-danger" onclick="deleteProfile('${alias}')" ${disabledAttr} title="Remover">🗑️</button>
+      ${runBtn}
+      <button class="btn btn-sm btn-ghost" onclick="toggleProfile('${alias}')" ${disabledAttr} title="${toggleLabel}">${toggleIcon} ${toggleLabel}</button>
+      <button class="btn btn-sm btn-ghost" onclick="changeDay('${alias}', ${day})" ${disabledAttr} title="Alterar etapa">${ICONS.edit} Etapa</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteProfile('${alias}')" ${disabledAttr} title="Remover perfil">${ICONS.trash}</button>
     </div>
   </div>`;
 }
@@ -312,7 +339,7 @@ async function addProfile() {
     if (input) input.value = '';
     loadProfiles();
   } catch (err) {
-    alert('Erro de conexão: ' + err.message);
+    alert('Erro de conexao: ' + err.message);
   }
 }
 
@@ -330,7 +357,6 @@ function hideAddModal() {
 
 async function toggleProfile(alias) {
   try {
-    // Get current status
     const profilesRes = await fetch(`${API}/api/profiles`);
     const profiles = await profilesRes.json();
     const current = profiles[alias];
@@ -351,50 +377,97 @@ async function toggleProfile(alias) {
   }
 }
 
-function changeDay(alias, currentDay) {
-  // Build day options list
-  const dayOptions = Object.entries(DAY_LABELS)
-    .filter(([k]) => parseInt(k) <= 6)
-    .map(([k, label]) => {
-      const num = parseInt(k);
-      const current = num === currentDay ? ' ← atual' : '';
-      return `${num}. ${label}${current}`;
-    }).join('\n');
+/* ─── Day Change Modal ──────────────────────────────────────── */
 
-  const newDay = prompt(`Alterar dia de "${alias}":\n\n${dayOptions}\n\nDigite o número (0-6):`, currentDay);
-  if (newDay === null) return;
-  const day = parseInt(newDay, 10);
-  if (isNaN(day) || day < 0 || day > 6) {
-    alert('Dia inválido. Use um número entre 0 e 6.');
-    return;
+function changeDay(alias, currentDay) {
+  dayModalAlias = alias;
+  dayModalSelected = currentDay;
+
+  const stepper = document.getElementById('day-stepper');
+  stepper.innerHTML = '';
+
+  for (let d = 0; d <= 6; d++) {
+    const isCurrent = d === currentDay;
+    const isSelected = d === dayModalSelected;
+    const step = document.createElement('div');
+    step.className = `step ${isCurrent ? 'step-current' : ''} ${isSelected ? 'step-selected' : ''}`;
+    step.dataset.day = d;
+    step.onclick = () => selectDay(d);
+    step.innerHTML = `
+      <div class="step-circle">${d}</div>
+      <div class="step-label">${DAY_LABELS[d]}</div>
+      ${isCurrent ? '<div class="step-tag">atual</div>' : ''}
+    `;
+    stepper.appendChild(step);
   }
 
-  fetch(`${API}/api/profiles/${encodeURIComponent(alias)}`, {
-    method:  'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ currentDay: day })
-  }).then(res => {
-    if (!res.ok) throw new Error(res.statusText);
-    loadProfiles();
-    loadDashboard();
-  }).catch(err => {
-    alert('Erro ao alterar dia: ' + err.message);
+  document.getElementById('day-modal').style.display = 'flex';
+}
+
+function selectDay(d) {
+  dayModalSelected = d;
+  document.querySelectorAll('.step').forEach(s => {
+    s.classList.toggle('step-selected', parseInt(s.dataset.day) === d);
   });
 }
 
-async function deleteProfile(alias) {
-  if (!confirm(`Remover o perfil "${alias}"? Esta ação não pode ser desfeita.`)) return;
+function hideDayModal() {
+  document.getElementById('day-modal').style.display = 'none';
+  dayModalAlias = null;
+  dayModalSelected = null;
+}
+
+async function confirmDayChange() {
+  if (dayModalAlias === null || dayModalSelected === null) return;
+
+  const day = dayModalSelected;
+  if (day < 0 || day > 6) {
+    alert('Dia invalido.');
+    return;
+  }
 
   try {
-    const res = await fetch(`${API}/api/profiles/${encodeURIComponent(alias)}`, {
-      method: 'DELETE'
+    const res = await fetch(`${API}/api/profiles/${encodeURIComponent(dayModalAlias)}`, {
+      method:  'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ currentDay: day })
     });
     if (!res.ok) throw new Error(res.statusText);
+    hideDayModal();
     loadProfiles();
+    loadDashboard();
   } catch (err) {
-    alert('Erro ao remover perfil: ' + err.message);
+    alert('Erro ao alterar dia: ' + err.message);
   }
 }
+
+/* ─── Delete Confirmation Modal ─────────────────────────────── */
+
+function deleteProfile(alias) {
+  deleteAlias = alias;
+  document.getElementById('delete-profile-name').textContent = alias;
+  document.getElementById('delete-modal').style.display = 'flex';
+}
+
+function hideDeleteModal() {
+  document.getElementById('delete-modal').style.display = 'none';
+  deleteAlias = null;
+}
+
+async function confirmDelete() {
+  if (!deleteAlias) return;
+  try {
+    const res = await fetch(`${API}/api/profiles/${encodeURIComponent(deleteAlias)}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(res.statusText);
+    hideDeleteModal();
+    loadProfiles();
+    loadDashboard();
+  } catch (err) {
+    alert('Erro ao remover: ' + err.message);
+  }
+}
+
+/* ─── Run Profile ───────────────────────────────────────────── */
 
 async function runProfile(alias) {
   if (runningProfiles.has(alias)) return;
@@ -423,7 +496,7 @@ async function runNextProfile() {
     console.log('runNext result:', data);
     loadProfiles();
   } catch (err) {
-    alert('Erro ao rodar próximo perfil: ' + err.message);
+    alert('Erro ao rodar proximo perfil: ' + err.message);
   }
 }
 
@@ -461,7 +534,7 @@ function renderLogs(logs) {
   if (!container) return;
 
   if (!logs.length) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📝</div>Nenhum log encontrado</div>';
+    container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">${ICONS.logs}</div>Nenhum log encontrado</div>`;
     return;
   }
 
@@ -469,13 +542,26 @@ function renderLogs(logs) {
 }
 
 function renderLogEntry(entry) {
-  const icons  = { success: '✓', error: '✗', progress: '▶', manual: '⚠', skip: '⊘' };
-  const colors = { success: '#00ff88', error: '#ff4444', progress: '#00d4ff', manual: '#ff8c00', skip: '#888' };
-  const icon   = icons[entry.type]  || '•';
-  const color  = colors[entry.type] || '#888';
-  const time   = entry.time || entry.timestamp || '';
-  const msg    = entry.msg  || entry.message   || '';
-  return `<div class="log-entry">
+  const iconMap = {
+    success:  ICONS.check,
+    error:    ICONS.close,
+    progress: ICONS.play,
+    manual:   ICONS.warning,
+    skip:     ICONS.pause,
+  };
+  const colorMap = {
+    success:  '#22c55e',
+    error:    '#ef4444',
+    progress: '#3b82f6',
+    manual:   '#f59e0b',
+    skip:     '#555570',
+  };
+  const icon  = iconMap[entry.type]  || ICONS.logs;
+  const color = colorMap[entry.type] || '#555570';
+  const time  = entry.time || entry.timestamp || '';
+  const msg   = entry.msg  || entry.message   || '';
+  const type  = entry.type || '';
+  return `<div class="log-entry" data-type="${type}">
     <span class="log-time">${time}</span>
     <span class="log-icon" style="color:${color}">${icon}</span>
     <span class="log-msg">${escapeHtml(msg)}</span>
@@ -512,25 +598,25 @@ async function loadConfig() {
 
 const CONFIG_LABELS = {
   'adspower.apiUrl': 'URL da API do AdsPower',
-  'likes.min': 'Curtidas mínimas',
-  'likes.max': 'Curtidas máximas',
-  'friends.max': 'Amigos máximo por dia',
-  'groups.min': 'Grupos mínimo',
-  'groups.max': 'Grupos máximo',
-  'reels.durationMin': 'Reels duração mínima (min)',
-  'reels.durationMax': 'Reels duração máxima (min)',
-  'live.duration': 'Live duração (min)',
-  'follows.max': 'Seguir páginas máximo por dia',
-  'marketplace.maxTotal': 'Marketplace máximo no total',
-  'session.lazyDayChance': 'Chance de dia preguiçoso (0-1)',
-  'session.startTimeVarianceMin': 'Variância de horário (min)',
-  'session.delayBetweenActions.min': 'Delay entre ações mín (seg)',
-  'session.delayBetweenActions.max': 'Delay entre ações máx (seg)',
-  'session.longPause.min': 'Pausa longa mín (seg)',
-  'session.longPause.max': 'Pausa longa máx (seg)',
+  'likes.min': 'Curtidas minimas',
+  'likes.max': 'Curtidas maximas',
+  'friends.max': 'Amigos maximo por dia',
+  'groups.min': 'Grupos minimo',
+  'groups.max': 'Grupos maximo',
+  'reels.durationMin': 'Reels duracao minima (min)',
+  'reels.durationMax': 'Reels duracao maxima (min)',
+  'live.duration': 'Live duracao (min)',
+  'follows.max': 'Seguir paginas maximo por dia',
+  'marketplace.maxTotal': 'Marketplace maximo no total',
+  'session.lazyDayChance': 'Chance de dia preguicoso (0-1)',
+  'session.startTimeVarianceMin': 'Variancia de horario (min)',
+  'session.delayBetweenActions.min': 'Delay entre acoes min (seg)',
+  'session.delayBetweenActions.max': 'Delay entre acoes max (seg)',
+  'session.longPause.min': 'Pausa longa min (seg)',
+  'session.longPause.max': 'Pausa longa max (seg)',
   'session.longPauseChance': 'Chance de pausa longa (0-1)',
-  'mouse.clickDelay.min': 'Delay de clique mín (ms)',
-  'mouse.clickDelay.max': 'Delay de clique máx (ms)',
+  'mouse.clickDelay.min': 'Delay de clique min (ms)',
+  'mouse.clickDelay.max': 'Delay de clique max (ms)',
   'retry.elementNotFound': 'Retentativas elemento',
   'retry.adspowerReconnect': 'Retentativas AdsPower',
   'retry.pageLoad': 'Retentativas carregamento',
@@ -543,9 +629,9 @@ const SECTION_LABELS = {
   groups: 'Grupos',
   reels: 'Reels',
   live: 'Lives',
-  follows: 'Seguir Páginas',
+  follows: 'Seguir Paginas',
   marketplace: 'Marketplace',
-  session: 'Sessão',
+  session: 'Sessao',
   mouse: 'Mouse',
   retry: 'Retentativas',
   postTemplates: 'Templates de Post',
@@ -570,7 +656,6 @@ function renderConfigForm(config) {
 
   const flat = flattenConfig(config);
 
-  // Group by top-level key
   const sections = {};
   for (const { key, value } of flat) {
     const section = key.split('.')[0];
@@ -581,14 +666,13 @@ function renderConfigForm(config) {
   grid.innerHTML = Object.entries(sections).map(([section, fields]) => {
     const sectionName = SECTION_LABELS[section] || section;
 
-    // Special handling for postTemplates (array)
     if (section === 'postTemplates') {
       const templates = config.postTemplates || [];
       return `<div class="config-section">
         <h3>${sectionName}</h3>
         <div class="form-group">
           <label>Templates (um por linha)</label>
-          <textarea id="cfg-postTemplates" data-config-key="postTemplates" rows="5" style="width:100%;background:#0a0a1a;color:#e0e0e0;border:1px solid #1e1e3a;border-radius:6px;padding:8px;font-family:system-ui;resize:vertical;">${templates.join('\n')}</textarea>
+          <textarea id="cfg-postTemplates" data-config-key="postTemplates" rows="5" style="width:100%;background:#0b0b1e;color:#e8e8f0;border:1px solid #1c1c40;border-radius:6px;padding:8px;font-family:inherit;resize:vertical;">${templates.join('\n')}</textarea>
         </div>
       </div>`;
     }
@@ -610,7 +694,7 @@ function renderConfigInput(key, value) {
   if (typeof value === 'boolean') {
     return `<select id="cfg-${key}" data-config-key="${key}">
       <option value="true"  ${value ? 'selected' : ''}>Sim</option>
-      <option value="false" ${!value ? 'selected' : ''}>Não</option>
+      <option value="false" ${!value ? 'selected' : ''}>Nao</option>
     </select>`;
   }
   if (typeof value === 'number') {
@@ -627,7 +711,6 @@ async function saveConfig() {
     const key = el.dataset.configKey;
     let val   = el.value;
 
-    // Handle postTemplates textarea
     if (key === 'postTemplates') {
       payload.postTemplates = val.split('\n').map(s => s.trim()).filter(Boolean);
       return;
@@ -637,7 +720,6 @@ async function saveConfig() {
     if (val === 'false') val = false;
     if (!isNaN(val) && val !== '' && typeof val !== 'boolean') val = Number(val);
 
-    // Rebuild nested object
     const parts = key.split('.');
     let obj = payload;
     for (let i = 0; i < parts.length - 1; i++) {
@@ -654,7 +736,7 @@ async function saveConfig() {
       body:    JSON.stringify(payload)
     });
     if (!res.ok) throw new Error(res.statusText);
-    alert('Configurações salvas com sucesso!');
+    alert('Configuracoes salvas com sucesso!');
   } catch (err) {
     alert('Erro ao salvar: ' + err.message);
   }
@@ -681,6 +763,17 @@ function escapeAttr(str) {
 ═══════════════════════════════════════════════════════════════ */
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Inject sidebar icons
+  document.getElementById('icon-dashboard').innerHTML = ICONS.dashboard;
+  document.getElementById('icon-profiles').innerHTML = ICONS.profiles;
+  document.getElementById('icon-logs').innerHTML = ICONS.logs;
+  document.getElementById('icon-config').innerHTML = ICONS.config;
+
+  // Inject close icons into modal buttons
+  document.getElementById('close-add-modal').innerHTML = ICONS.close;
+  document.getElementById('close-day-modal').innerHTML = ICONS.close;
+  document.getElementById('close-delete-modal').innerHTML = ICONS.close;
+
   // Nav button listeners
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -693,9 +786,15 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('filter-profile')?.addEventListener('change', applyLogFilters);
   document.getElementById('filter-type')?.addEventListener('change',    applyLogFilters);
 
-  // Close modal on overlay click
+  // Close modals on overlay click
   document.getElementById('add-modal')?.addEventListener('click', (e) => {
     if (e.target === e.currentTarget) hideAddModal();
+  });
+  document.getElementById('day-modal')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) hideDayModal();
+  });
+  document.getElementById('delete-modal')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) hideDeleteModal();
   });
 
   // Load initial page
