@@ -38,10 +38,13 @@ router.post('/profiles', (req, res) => {
   if (!adspowerId) return res.status(400).json({ error: 'adspowerId é obrigatório' });
 
   const profiles = loadProfiles();
-  const existingNums = Object.keys(profiles)
-    .filter(k => k.match(/^p\d+$/))
-    .map(k => parseInt(k.replace('p', '')));
-  const nextNum = existingNums.length > 0 ? Math.max(...existingNums) + 1 : 1;
+  const existingNums = new Set(
+    Object.keys(profiles)
+      .filter(k => k.match(/^p\d+$/))
+      .map(k => parseInt(k.replace('p', '')))
+  );
+  let nextNum = 1;
+  while (existingNums.has(nextNum)) nextNum++;
   const alias = `p${String(nextNum).padStart(3, '0')}`;
 
   profiles[alias] = {
