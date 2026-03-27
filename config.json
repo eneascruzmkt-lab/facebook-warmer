@@ -1,0 +1,25 @@
+{
+  "adspower": {
+    "apiUrl": "http://local.adspower.net:50325"
+  },
+  "likes": { "min": 5, "max": 10 },
+  "friends": { "max": 5 },
+  "groups": { "min": 1, "max": 2 },
+  "reels": { "durationMin": 15, "durationMax": 25 },
+  "live": { "duration": 120 },
+  "marketplace": { "maxTotal": 2 },
+  "session": {
+    "lazyDayChance": 0.2,
+    "startTimeVarianceMin": 60,
+    "delayBetweenActions": { "min": 30, "max": 300 },
+    "longPause": { "min": 300, "max": 900 },
+    "longPauseChance": 0.3
+  },
+  "mouse": { "clickDelay": { "min": 100, "max": 400 } },
+  "retry": { "elementNotFound": 2, "adspowerReconnect": 3, "pageLoad": 2 },
+  "postTemplates": [
+    "Bom dia! Mais um dia de trabalho.",
+    "Alguém aí com dicas de livros?",
+    "Que semana corrida! Bora descansar."
+  ]
+}
