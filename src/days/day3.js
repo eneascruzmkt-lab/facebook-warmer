@@ -24,10 +24,8 @@ async function runDay3(page, cursor, logger, profileAlias) {
   const plan = generatePlan(profileAlias, 3, AVAILABLE_ACTIONS);
   logger.setTotalActions(plan.actions.length + 1);
 
-  await setup2FA(page, cursor, logger, profileAlias);
-  await humanDelay();
-
-  const results = { twoFa: true };
+  // Warming first
+  const results = {};
   for (const action of plan.actions) {
     try {
       const result = await ACTION_MAP[action.fn](page, cursor, logger, action.intensity);
@@ -39,12 +37,16 @@ async function runDay3(page, cursor, logger, profileAlias) {
     await humanDelay();
   }
 
+  // 2FA after warming
+  await setup2FA(page, cursor, logger, profileAlias);
+  results.twoFa = true;
+
   addDayToHistory(profileAlias, {
     day: 3,
     date: new Date().toISOString().split('T')[0],
     startTime: logger.startTime.toLocaleTimeString('pt-BR', { hour12: false }),
     endTime: new Date().toLocaleTimeString('pt-BR', { hour12: false }),
-    actionsOrder: ['setup-2fa', ...plan.actions.map(a => a.name)],
+    actionsOrder: [...plan.actions.map(a => a.name), 'setup-2fa'],
     actions: results,
     errors: logger.entries.filter(e => e.type === 'error'),
     manualPauses: logger.entries.filter(e => e.type === 'manual'),
