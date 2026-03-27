@@ -164,17 +164,26 @@ async function runNext() {
     return;
   }
 
-  const [alias, data] = active[0];
-  const day = data.currentDay || 0;
+  // Show all active profiles with their current day
+  console.log(chalk.cyan('\n  Perfis ativos:\n'));
+  active.forEach(([alias, data], i) => {
+    const day = data.currentDay || 0;
+    const marker = i === 0 ? chalk.green(' ← sugerido') : '';
+    console.log(`  ${i + 1}. ${alias} → Dia ${day} (${DAY_LABELS[day]})${marker}`);
+  });
 
-  console.log(chalk.cyan(`\n  Próximo: ${alias} → Dia ${day} (${DAY_LABELS[day]})`));
-  console.log(chalk.gray(`  ${active.length} perfil(s) ativo(s)\n`));
+  const choice = await askQuestion('\n  Número do perfil (ENTER para o sugerido): ');
+  const idx = choice.trim() === '' ? 0 : parseInt(choice) - 1;
 
-  const confirm = await askQuestion('  Rodar agora? (s/n): ');
-  if (confirm.toLowerCase() !== 's') {
-    console.log(chalk.gray('\n  Cancelado.\n'));
+  if (idx < 0 || idx >= active.length) {
+    console.log(chalk.red('\n  Número inválido.\n'));
     return;
   }
+
+  const [alias, data] = active[idx];
+  const day = data.currentDay || 0;
+
+  console.log(chalk.cyan(`\n  Rodando: ${alias} → Dia ${day} (${DAY_LABELS[day]})\n`));
 
   await runDay(day, alias);
 }
