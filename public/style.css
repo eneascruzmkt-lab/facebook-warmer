@@ -431,6 +431,100 @@ html, body {
   align-items: center;
 }
 
+/* ─── Profile Cards Grid ────────────────────────────────────── */
+.profiles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.profile-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  position: relative;
+  transition: border-color var(--transition), transform var(--transition);
+}
+
+.profile-card:hover {
+  border-color: rgba(0, 212, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.profile-card.running {
+  border-color: var(--accent);
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.15);
+}
+
+.profile-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.profile-card-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.profile-card-id {
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+  color: var(--accent);
+  background: rgba(0, 212, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.profile-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.profile-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.profile-card-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.profile-card-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.profile-card-progress {
+  margin-bottom: 16px;
+}
+
+.profile-card-progress .progress-bar {
+  height: 8px;
+}
+
+.profile-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.profile-card-actions .btn {
+  flex: 1;
+  justify-content: center;
+  min-width: 0;
+}
+
 /* ─── Badges ────────────────────────────────────────────────── */
 .badge {
   display: inline-block;

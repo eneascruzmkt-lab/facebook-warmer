@@ -202,39 +202,60 @@ async function loadProfiles() {
 }
 
 function renderProfilesTable(profiles) {
-  const tbody = document.getElementById('profiles-tbody');
-  if (!tbody) return;
+  const grid = document.getElementById('profiles-grid');
+  if (!grid) return;
 
   const entries = Object.entries(profiles || {});
   if (!entries.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">👤</div>Nenhum perfil cadastrado ainda</div></td></tr>`;
+    grid.innerHTML = `<div class="empty-state"><div class="empty-state-icon">👤</div>Nenhum perfil cadastrado ainda.<br>Clique em "+ Adicionar" para começar.</div>`;
     return;
   }
 
-  tbody.innerHTML = entries.map(([alias, data]) => renderProfileRow(alias, data)).join('');
+  grid.innerHTML = entries.map(([alias, data]) => renderProfileCard(alias, data)).join('');
 }
 
-function renderProfileRow(alias, data) {
-  const day         = data.currentDay || 0;
-  const status      = data.status || 'active';
-  const label       = DAY_LABELS[day] || '?';
+function renderProfileCard(alias, data) {
+  const day = data.currentDay || 0;
+  const status = data.status || 'active';
+  const label = DAY_LABELS[day] || '?';
+  const pct = day > 6 ? 100 : Math.round((day / 6) * 100);
+  const color = day > 6 ? '#a855f7' : (pct > 60 ? '#00ff88' : '#00d4ff');
   const statusBadge = status === 'active'
     ? '<span class="badge badge-active">Ativo</span>'
     : '<span class="badge badge-paused">Pausado</span>';
+  const isComplete = day > 6;
 
-  return `<tr>
-    <td><strong>${alias}</strong></td>
-    <td><code>${data.adspowerId || data.adspower_id || ''}</code></td>
-    <td>${day > 6 ? '✓' : day}</td>
-    <td>${day > 6 ? 'Concluído' : label}</td>
-    <td>${statusBadge}</td>
-    <td class="actions-cell">
-      ${day <= 6 ? `<button class="btn btn-sm btn-primary" onclick="runProfile('${alias}')">▶</button>` : ''}
-      <button class="btn btn-sm btn-ghost" onclick="toggleProfile('${alias}')">${status === 'active' ? '⏸' : '▶'}</button>
-      <button class="btn btn-sm btn-ghost" onclick="changeDay('${alias}', ${day})">✏️</button>
-      <button class="btn btn-sm btn-danger" onclick="deleteProfile('${alias}')">🗑️</button>
-    </td>
-  </tr>`;
+  return `<div class="profile-card">
+    <div class="profile-card-header">
+      <span class="profile-card-name">${alias}</span>
+      <span class="profile-card-id">${data.adspowerId || ''}</span>
+    </div>
+    <div class="profile-card-info">
+      <div class="profile-card-row">
+        <span class="profile-card-label">Status</span>
+        ${statusBadge}
+      </div>
+      <div class="profile-card-row">
+        <span class="profile-card-label">Etapa Atual</span>
+        <span class="profile-card-value" style="color:${color}">${isComplete ? 'Concluído' : `Dia ${day} — ${label}`}</span>
+      </div>
+      <div class="profile-card-row">
+        <span class="profile-card-label">Progresso</span>
+        <span class="profile-card-value" style="color:${color}">${pct}%</span>
+      </div>
+    </div>
+    <div class="profile-card-progress">
+      <div class="progress-bar">
+        <div class="progress-fill" style="width:${pct}%;background:linear-gradient(90deg,#00d4ff,${color})"></div>
+      </div>
+    </div>
+    <div class="profile-card-actions">
+      ${!isComplete ? `<button class="btn btn-sm btn-primary" onclick="runProfile('${alias}')" title="Rodar dia ${day}">▶ Rodar</button>` : ''}
+      <button class="btn btn-sm btn-ghost" onclick="toggleProfile('${alias}')" title="${status === 'active' ? 'Pausar' : 'Retomar'}">${status === 'active' ? '⏸ Pausar' : '▶ Retomar'}</button>
+      <button class="btn btn-sm btn-ghost" onclick="changeDay('${alias}', ${day})" title="Alterar dia">✏️ Dia</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteProfile('${alias}')" title="Remover">🗑️</button>
+    </div>
+  </div>`;
 }
 
 async function addProfile() {
@@ -647,4 +668,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load initial page
   loadDashboard();
   connectSSE();
+
+  // Auto-refresh dashboard every 10 seconds
+  setInterval(() => {
+    const activePage = document.querySelector('.page.active');
+    if (activePage?.id === 'page-dashboard') {
+      loadDashboard();
+    }
+  }, 10000);
 });
