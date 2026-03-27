@@ -179,7 +179,7 @@ async function runNext() {
   await runDay(day, alias);
 }
 
-async function toggleProfile() {
+async function manageProfile() {
   const profiles = loadProfiles();
   const entries = Object.entries(profiles);
 
@@ -192,23 +192,52 @@ async function toggleProfile() {
   entries.forEach(([alias, data], i) => {
     const status = data.status || 'active';
     const icon = status === 'active' ? chalk.green('ativo') : chalk.red('pausado');
-    console.log(`  ${i + 1}. ${alias} — ${icon}`);
+    console.log(`  ${i + 1}. ${alias} (${data.adspowerId}) — ${icon}`);
   });
 
-  const choice = await askQuestion('\n  Número do perfil: ');
-  const idx = parseInt(choice) - 1;
+  console.log(`\n  a. Pausar/Retomar perfil`);
+  console.log(`  b. Remover perfil`);
 
-  if (idx < 0 || idx >= entries.length) {
-    console.log(chalk.red('\n  Número inválido.\n'));
-    return;
+  const action = await askQuestion('\n  Escolha (a/b): ');
+
+  if (action.trim().toLowerCase() === 'a') {
+    const choice = await askQuestion('  Número do perfil: ');
+    const idx = parseInt(choice) - 1;
+
+    if (idx < 0 || idx >= entries.length) {
+      console.log(chalk.red('\n  Número inválido.\n'));
+      return;
+    }
+
+    const [alias, data] = entries[idx];
+    const newStatus = (data.status || 'active') === 'active' ? 'paused' : 'active';
+    updateProfile(alias, { status: newStatus });
+
+    const msg = newStatus === 'active' ? chalk.green('retomado') : chalk.yellow('pausado');
+    console.log(`\n  ${alias} ${msg}.\n`);
+
+  } else if (action.trim().toLowerCase() === 'b') {
+    const choice = await askQuestion('  Número do perfil para remover: ');
+    const idx = parseInt(choice) - 1;
+
+    if (idx < 0 || idx >= entries.length) {
+      console.log(chalk.red('\n  Número inválido.\n'));
+      return;
+    }
+
+    const [alias] = entries[idx];
+    const confirm = await askQuestion(`  Tem certeza que quer remover ${alias}? (s/n): `);
+
+    if (confirm.trim().toLowerCase() === 's') {
+      delete profiles[alias];
+      saveProfiles(profiles);
+      console.log(chalk.green(`\n  ${alias} removido.\n`));
+    } else {
+      console.log(chalk.gray('\n  Cancelado.\n'));
+    }
+  } else {
+    console.log(chalk.red('\n  Opção inválida.\n'));
   }
-
-  const [alias, data] = entries[idx];
-  const newStatus = (data.status || 'active') === 'active' ? 'paused' : 'active';
-  updateProfile(alias, { status: newStatus });
-
-  const msg = newStatus === 'active' ? chalk.green('retomado') : chalk.yellow('pausado');
-  console.log(`\n  ${alias} ${msg}.\n`);
 }
 
 async function runSingleAction() {
@@ -290,7 +319,7 @@ async function showMenu() {
   console.log('  1. Rodar próximo perfil');
   console.log('  2. Ver status dos perfis');
   console.log('  3. Adicionar novo perfil');
-  console.log('  4. Pausar/Retomar perfil');
+  console.log('  4. Gerenciar perfil (pausar/remover)');
   console.log('  5. Rodar ação avulsa');
   console.log('  0. Sair\n');
 
@@ -307,7 +336,7 @@ async function showMenu() {
       await addProfile();
       break;
     case '4':
-      await toggleProfile();
+      await manageProfile();
       break;
     case '5':
       await runSingleAction();
