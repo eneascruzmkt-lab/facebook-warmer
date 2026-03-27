@@ -11,18 +11,44 @@ echo.
 :: Verificar se Node.js esta instalado
 where node >nul 2>nul
 if %errorlevel% neq 0 (
-    echo  [ERRO] Node.js nao encontrado.
-    echo  Baixe em: https://nodejs.org
-    echo  Instale e rode este script novamente.
+    echo  Node.js nao encontrado. Instalando automaticamente...
     echo.
-    pause
-    exit /b 1
-)
 
-echo  [OK] Node.js encontrado:
+    :: Baixar Node.js via PowerShell
+    echo  Baixando Node.js...
+    powershell -Command "Invoke-WebRequest -Uri 'https://nodejs.org/dist/v22.14.0/node-v22.14.0-x64.msi' -OutFile '%TEMP%\node-install.msi'"
+
+    if not exist "%TEMP%\node-install.msi" (
+        echo  [ERRO] Falha ao baixar Node.js.
+        echo  Baixe manualmente em: https://nodejs.org
+        pause
+        exit /b 1
+    )
+
+    echo  Instalando Node.js (pode pedir permissao de administrador)...
+    msiexec /i "%TEMP%\node-install.msi" /qn
+
+    :: Atualizar PATH na sessao atual
+    set "PATH=%ProgramFiles%\nodejs;%PATH%"
+
+    :: Verificar novamente
+    where node >nul 2>nul
+    if %errorlevel% neq 0 (
+        echo  [ERRO] Instalacao do Node.js falhou.
+        echo  Tente instalar manualmente: https://nodejs.org
+        pause
+        exit /b 1
+    )
+
+    echo  [OK] Node.js instalado com sucesso
+    del "%TEMP%\node-install.msi" >nul 2>nul
+) else (
+    echo  [OK] Node.js encontrado
+)
 node -v
 
 :: Verificar se Git esta instalado
+echo.
 where git >nul 2>nul
 if %errorlevel% neq 0 (
     echo  [AVISO] Git nao encontrado. Pulando clone.
@@ -65,13 +91,10 @@ echo  ========================================
 echo   Instalacao concluida!
 echo  ========================================
 echo.
-echo  Para iniciar o painel:
-echo    cd facebook-warmer
-echo    node server.js
+echo  Para iniciar, de dois cliques em start.bat
+echo  ou rode: node server.js
 echo.
-echo  Depois abra no navegador:
-echo    http://localhost:3000
-echo.
-echo  Lembre-se: o AdsPower precisa estar aberto.
+echo  O painel abre em: http://localhost:3000
+echo  O AdsPower precisa estar aberto.
 echo.
 pause
