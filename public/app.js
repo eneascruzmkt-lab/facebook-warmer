@@ -735,6 +735,9 @@ const CONFIG_FIELDS = [
     { key: 'groups.min', label: 'Grupos por dia (minimo)', type: 'number' },
     { key: 'groups.max', label: 'Grupos por dia (maximo)', type: 'number' },
     { key: 'follows.max', label: 'Paginas seguidas por dia (maximo)', type: 'number' },
+    { key: 'comments.max', label: 'Comentarios por sessao (maximo)', type: 'number' },
+    { key: 'shares.max', label: 'Compartilhamentos por sessao (maximo)', type: 'number' },
+    { key: 'stories.max', label: 'Stories postados por sessao (maximo)', type: 'number' },
     { key: 'marketplace.maxTotal', label: 'Marketplace no processo inteiro (maximo)', type: 'number' },
   ]},
   { section: 'Tempo de Uso', desc: 'Quanto tempo o bot passa em cada atividade', fields: [
@@ -750,6 +753,10 @@ const CONFIG_FIELDS = [
     { key: 'session.longPauseChance', label: 'Chance de pausa longa (0 = nunca, 1 = sempre)', type: 'number', step: '0.05' },
     { key: 'session.lazyDayChance', label: 'Chance de dia preguicoso (0 = nunca, 1 = sempre)', type: 'number', step: '0.05' },
     { key: 'session.startTimeVarianceMin', label: 'Variacao de horario de inicio (minutos)', type: 'number' },
+  ]},
+  { section: 'Notificacoes Telegram', desc: 'Receba alertas no Telegram quando o bot iniciar, concluir ou precisar de acao manual. Crie um bot em @BotFather e pegue o chat ID em @userinfobot', fields: [
+    { key: 'telegram.botToken', label: 'Token do Bot (do @BotFather)', type: 'text' },
+    { key: 'telegram.chatId', label: 'Chat ID (do @userinfobot)', type: 'text' },
   ]},
   { section: 'Textos para Publicacao', desc: 'Frases que o bot usa ao publicar posts na pagina', fields: [
     { key: 'postTemplates', label: 'Um texto por linha', type: 'textarea' },
@@ -780,9 +787,11 @@ function renderConfigForm(config) {
           </div>`;
         }
         const step = f.step ? `step="${f.step}"` : '';
+        const inputType = f.type === 'text' ? 'text' : 'number';
+        const inputWidth = f.type === 'text' ? 'style="width:280px !important;text-align:left;"' : '';
         return `<div class="config-row">
           <div class="config-row-label">${f.label}</div>
-          <input type="number" data-config-key="${f.key}" value="${val ?? ''}" ${step} class="config-input">
+          <input type="${inputType}" data-config-key="${f.key}" value="${escapeAttr(String(val ?? ''))}" ${step} class="config-input" ${inputWidth}>
         </div>`;
       }).join('')}
     </div>
@@ -831,6 +840,21 @@ async function saveConfig() {
 /* ═══════════════════════════════════════════════════════════════
    UTILITIES
 ═══════════════════════════════════════════════════════════════ */
+
+async function doBackup() {
+  try {
+    const res = await fetch(`${API}/api/backup`, { method: 'POST' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert('Erro: ' + (err.error || res.statusText));
+      return;
+    }
+    const data = await res.json();
+    alert(`Backup salvo em: ${data.filepath}\n${data.count} perfis exportados.`);
+  } catch (err) {
+    alert('Erro ao fazer backup: ' + err.message);
+  }
+}
 
 function escapeHtml(str) {
   return String(str)

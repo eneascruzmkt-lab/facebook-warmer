@@ -7,21 +7,33 @@ const { likePosts } = require('../actions/like-posts');
 const { joinGroups } = require('../actions/join-groups');
 const { addFriends } = require('../actions/add-friends');
 const { followPages } = require('../actions/follow-pages');
+const { commentPosts } = require('../actions/comment-posts');
+const { reactPosts } = require('../actions/react-posts');
+const { watchStories } = require('../actions/watch-stories');
+const { sharePosts } = require('../actions/share-posts');
 
 const AVAILABLE_ACTIONS = [
   { name: 'scroll-feed', key: 'scrollFeed', fn: 'scrollFeed' },
   { name: 'like-posts', key: 'likes', fn: 'likePosts' },
+  { name: 'react-posts', key: 'reactions', fn: 'reactPosts' },
+  { name: 'comment-posts', key: 'comments', fn: 'commentPosts' },
+  { name: 'watch-stories', key: 'stories', fn: 'watchStories' },
   { name: 'join-groups', key: 'groups', fn: 'joinGroups' },
   { name: 'add-friends', key: 'friends', fn: 'addFriends' },
   { name: 'follow-pages', key: 'follows', fn: 'followPages' },
+  { name: 'share-posts', key: 'shares', fn: 'sharePosts' },
 ];
 
 const ACTION_MAP = {
   scrollFeed: (page, cursor, logger, intensity) => scrollFeed(page, cursor, logger),
   likePosts: (page, cursor, logger, intensity) => likePosts(page, cursor, logger, intensity),
+  reactPosts: (page, cursor, logger, intensity) => reactPosts(page, cursor, logger, intensity),
+  commentPosts: (page, cursor, logger, intensity) => commentPosts(page, cursor, logger, intensity),
+  watchStories: (page, cursor, logger) => watchStories(page, cursor, logger),
   joinGroups: (page, cursor, logger, intensity) => joinGroups(page, cursor, logger),
   addFriends: (page, cursor, logger, intensity) => addFriends(page, cursor, logger, intensity),
   followPages: (page, cursor, logger, intensity) => followPages(page, cursor, logger, intensity),
+  sharePosts: (page, cursor, logger, intensity) => sharePosts(page, cursor, logger, intensity),
 };
 
 async function runDay4(page, cursor, logger, profileAlias) {

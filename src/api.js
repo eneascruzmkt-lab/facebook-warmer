@@ -239,4 +239,16 @@ router.get('/stats', (req, res) => {
   res.json({ total, active, completed, paused, actionsToday, weekActions });
 });
 
+// Backup
+router.post('/backup', (req, res) => {
+  try {
+    const { backupCredentials } = require('./backup');
+    const result = backupCredentials();
+    if (!result) return res.status(400).json({ error: 'Nenhum perfil para backup' });
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 module.exports = { router, broadcastSSE };

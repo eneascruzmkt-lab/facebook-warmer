@@ -5,27 +5,42 @@ const { browseMarketplace } = require('../actions/browse-marketplace');
 const { joinGroups } = require('../actions/join-groups');
 const { addFriends } = require('../actions/add-friends');
 const { followPages } = require('../actions/follow-pages');
+const { commentPosts } = require('../actions/comment-posts');
+const { reactPosts } = require('../actions/react-posts');
+const { watchStories } = require('../actions/watch-stories');
+const { sharePosts } = require('../actions/share-posts');
+const { postStory } = require('../actions/post-story');
 const { generatePlan, addDayToHistory } = require('../randomizer');
 const { humanDelay, createHumanCursor } = require('../human');
 
 const AVAILABLE_ACTIONS = [
   { name: 'scroll-feed', key: 'scrollFeed', fn: 'scrollFeed' },
   { name: 'like-posts', key: 'likes', fn: 'likePosts' },
+  { name: 'react-posts', key: 'reactions', fn: 'reactPosts' },
+  { name: 'comment-posts', key: 'comments', fn: 'commentPosts' },
   { name: 'watch-live', key: 'live', fn: 'watchLive' },
+  { name: 'watch-stories', key: 'stories', fn: 'watchStories' },
   { name: 'browse-marketplace', key: 'marketplace', fn: 'browseMarketplace' },
   { name: 'join-groups', key: 'groups', fn: 'joinGroups' },
   { name: 'add-friends', key: 'friends', fn: 'addFriends' },
   { name: 'follow-pages', key: 'follows', fn: 'followPages' },
+  { name: 'share-posts', key: 'shares', fn: 'sharePosts' },
+  { name: 'post-story', key: 'postedStory', fn: 'postStory' },
 ];
 
 const ACTION_MAP = {
   scrollFeed: (page, cursor, logger, intensity) => scrollFeed(page, cursor, logger),
   likePosts: (page, cursor, logger, intensity) => likePosts(page, cursor, logger, intensity),
+  reactPosts: (page, cursor, logger, intensity) => reactPosts(page, cursor, logger, intensity),
+  commentPosts: (page, cursor, logger, intensity) => commentPosts(page, cursor, logger, intensity),
   watchLive: (page, cursor, logger, intensity) => watchLive(page, cursor, logger),
+  watchStories: (page, cursor, logger) => watchStories(page, cursor, logger),
   browseMarketplace: (page, cursor, logger, intensity) => browseMarketplace(page, cursor, logger),
   joinGroups: (page, cursor, logger, intensity) => joinGroups(page, cursor, logger),
   addFriends: (page, cursor, logger, intensity) => addFriends(page, cursor, logger, intensity),
   followPages: (page, cursor, logger, intensity) => followPages(page, cursor, logger, intensity),
+  sharePosts: (page, cursor, logger, intensity) => sharePosts(page, cursor, logger, intensity),
+  postStory: (page, cursor, logger) => postStory(page, cursor, logger),
 };
 
 async function runDay2(page, cursor, logger, profileAlias) {

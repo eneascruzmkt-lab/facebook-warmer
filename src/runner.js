@@ -3,6 +3,7 @@ const { getProfile, updateProfile } = require('./profiles');
 const { acquireLock, releaseLock, setupGracefulShutdown } = require('./lock');
 const { Logger, saveScreenshot } = require('./logger');
 const { createHumanCursor } = require('./human');
+const { notifyStart, notifyComplete, notifyError, notifyManual } = require('./telegram');
 
 const { runDay0 } = require('./days/day0');
 const { runDay1 } = require('./days/day1');
@@ -39,10 +40,12 @@ async function runDayFromAPI(day, profileAlias, broadcastFn) {
   logger.error = (msg) => {
     originalError(msg);
     if (broadcastFn) broadcastFn({ type: 'error', time: logger._timestamp(), msg, profile: profileAlias });
+    notifyError(profileAlias, msg);
   };
   logger.manual = (msg) => {
     originalManual(msg);
     if (broadcastFn) broadcastFn({ type: 'manual', time: logger._timestamp(), msg, profile: profileAlias });
+    notifyManual(profileAlias, msg);
   };
   logger.skip = (msg) => {
     originalSkip(msg);
@@ -53,6 +56,8 @@ async function runDayFromAPI(day, profileAlias, broadcastFn) {
     await runDay1(null, null, logger, profileAlias);
     return;
   }
+
+  notifyStart(profileAlias, day);
 
   acquireLock(profileAlias);
   let browser;
@@ -81,6 +86,7 @@ async function runDayFromAPI(day, profileAlias, broadcastFn) {
     logger.printFooter();
 
     if (broadcastFn) broadcastFn({ type: 'completed', profile: profileAlias, day });
+    notifyComplete(profileAlias, day);
   } catch (e) {
     logger.error(e.message);
     try {

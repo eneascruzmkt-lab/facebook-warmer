@@ -5,11 +5,15 @@ const { likePosts } = require('../actions/like-posts');
 const { watchReels } = require('../actions/watch-reels');
 const { addFriends } = require('../actions/add-friends');
 const { followPages } = require('../actions/follow-pages');
+const { reactPosts } = require('../actions/react-posts');
+const { watchStories } = require('../actions/watch-stories');
 
 const AVAILABLE_ACTIONS = [
   { name: 'scroll-feed', key: 'scrollFeed', fn: 'scrollFeed' },
   { name: 'like-posts', key: 'likes', fn: 'likePosts' },
+  { name: 'react-posts', key: 'reactions', fn: 'reactPosts' },
   { name: 'watch-reels', key: 'reels', fn: 'watchReels' },
+  { name: 'watch-stories', key: 'stories', fn: 'watchStories' },
   { name: 'add-friends', key: 'friends', fn: 'addFriends' },
   { name: 'follow-pages', key: 'follows', fn: 'followPages' },
 ];
@@ -17,7 +21,9 @@ const AVAILABLE_ACTIONS = [
 const ACTION_MAP = {
   scrollFeed: (page, cursor, logger, intensity) => scrollFeed(page, cursor, logger),
   likePosts: (page, cursor, logger, intensity) => likePosts(page, cursor, logger, intensity),
+  reactPosts: (page, cursor, logger, intensity) => reactPosts(page, cursor, logger, intensity),
   watchReels: (page, cursor, logger, intensity) => watchReels(page, cursor, logger),
+  watchStories: (page, cursor, logger) => watchStories(page, cursor, logger),
   addFriends: (page, cursor, logger, intensity) => addFriends(page, cursor, logger, intensity),
   followPages: (page, cursor, logger, intensity) => followPages(page, cursor, logger, intensity),
 };

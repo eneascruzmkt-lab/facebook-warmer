@@ -7,6 +7,9 @@
   "groups": { "min": 1, "max": 2 },
   "reels": { "durationMin": 15, "durationMax": 25 },
   "live": { "duration": 120 },
+  "comments": { "max": 3 },
+  "shares": { "max": 2 },
+  "stories": { "max": 1 },
   "follows": { "max": 3 },
   "marketplace": { "maxTotal": 2 },
   "session": {
@@ -18,6 +21,10 @@
   },
   "mouse": { "clickDelay": { "min": 100, "max": 400 } },
   "retry": { "elementNotFound": 2, "adspowerReconnect": 3, "pageLoad": 2 },
+  "telegram": {
+    "botToken": "",
+    "chatId": ""
+  },
   "postTemplates": [
     "Bom dia! Mais um dia de trabalho.",
     "Alguém aí com dicas de livros?",
