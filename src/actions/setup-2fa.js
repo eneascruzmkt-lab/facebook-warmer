@@ -4,19 +4,10 @@ const { updateProfile } = require('../profiles');
 async function setup2FA(page, cursor, logger, profileAlias) {
   logger.progress('Configurando 2FA...');
 
-  await page.goto('https://www.facebook.com/settings?tab=security', { waitUntil: 'networkidle2', timeout: 30000 });
+  await page.goto('https://accountscenter.facebook.com/password_and_security/two_factor', { waitUntil: 'networkidle2', timeout: 30000 });
   await sleep(randInt(3000, 6000));
 
   try {
-    const twoFaLink = await page.$('a[href*="two_factor"], [data-testid*="2fa"]');
-
-    if (twoFaLink) {
-      await humanClick(cursor, twoFaLink);
-      await sleep(randInt(3000, 5000));
-    } else {
-      await page.goto('https://www.facebook.com/security/2fac/settings/', { waitUntil: 'networkidle2', timeout: 30000 });
-      await sleep(randInt(3000, 6000));
-    }
 
     logger.manual('Copie o código/chave secreta que o Facebook mostra');
     await waitForEnter('   → Pressione ENTER após copiar a chave... ');
