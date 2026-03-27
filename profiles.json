@@ -1,11 +1,11 @@
 {
-  "p001": {
-    "adspowerId": "k1au8ng6",
-    "email": "",
+  "p004": {
+    "adspowerId": "85",
+    "email": "p004.wel@hotmail.com",
     "emailPassword": "",
     "twoFactorSecret": "",
     "createdAt": "2026-03-27",
-    "currentDay": 0,
+    "currentDay": 3,
     "status": "active",
     "notes": ""
   }
