@@ -4,6 +4,7 @@ const { watchLive } = require('../actions/watch-live');
 const { browseMarketplace } = require('../actions/browse-marketplace');
 const { joinGroups } = require('../actions/join-groups');
 const { addFriends } = require('../actions/add-friends');
+const { followPages } = require('../actions/follow-pages');
 const { generatePlan, addDayToHistory } = require('../randomizer');
 const { humanDelay, createHumanCursor } = require('../human');
 
@@ -14,6 +15,7 @@ const AVAILABLE_ACTIONS = [
   { name: 'browse-marketplace', key: 'marketplace', fn: 'browseMarketplace' },
   { name: 'join-groups', key: 'groups', fn: 'joinGroups' },
   { name: 'add-friends', key: 'friends', fn: 'addFriends' },
+  { name: 'follow-pages', key: 'follows', fn: 'followPages' },
 ];
 
 const ACTION_MAP = {
@@ -23,6 +25,7 @@ const ACTION_MAP = {
   browseMarketplace: (page, cursor, logger, intensity) => browseMarketplace(page, cursor, logger),
   joinGroups: (page, cursor, logger, intensity) => joinGroups(page, cursor, logger),
   addFriends: (page, cursor, logger, intensity) => addFriends(page, cursor, logger, intensity),
+  followPages: (page, cursor, logger, intensity) => followPages(page, cursor, logger, intensity),
 };
 
 async function runDay2(page, cursor, logger, profileAlias) {

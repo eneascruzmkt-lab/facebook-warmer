@@ -7,6 +7,7 @@
   "groups": { "min": 1, "max": 2 },
   "reels": { "durationMin": 15, "durationMax": 25 },
   "live": { "duration": 120 },
+  "follows": { "max": 3 },
   "marketplace": { "maxTotal": 2 },
   "session": {
     "lazyDayChance": 0.2,

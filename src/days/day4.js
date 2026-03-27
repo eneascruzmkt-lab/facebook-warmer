@@ -6,12 +6,14 @@ const { scrollFeed } = require('../actions/scroll-feed');
 const { likePosts } = require('../actions/like-posts');
 const { joinGroups } = require('../actions/join-groups');
 const { addFriends } = require('../actions/add-friends');
+const { followPages } = require('../actions/follow-pages');
 
 const AVAILABLE_ACTIONS = [
   { name: 'scroll-feed', key: 'scrollFeed', fn: 'scrollFeed' },
   { name: 'like-posts', key: 'likes', fn: 'likePosts' },
   { name: 'join-groups', key: 'groups', fn: 'joinGroups' },
   { name: 'add-friends', key: 'friends', fn: 'addFriends' },
+  { name: 'follow-pages', key: 'follows', fn: 'followPages' },
 ];
 
 const ACTION_MAP = {
@@ -19,6 +21,7 @@ const ACTION_MAP = {
   likePosts: (page, cursor, logger, intensity) => likePosts(page, cursor, logger, intensity),
   joinGroups: (page, cursor, logger, intensity) => joinGroups(page, cursor, logger),
   addFriends: (page, cursor, logger, intensity) => addFriends(page, cursor, logger, intensity),
+  followPages: (page, cursor, logger, intensity) => followPages(page, cursor, logger, intensity),
 };
 
 async function runDay4(page, cursor, logger, profileAlias) {

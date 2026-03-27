@@ -281,38 +281,56 @@ function hideAddModal() {
 
 async function toggleProfile(alias) {
   try {
+    // Get current status
+    const profilesRes = await fetch(`${API}/api/profiles`);
+    const profiles = await profilesRes.json();
+    const current = profiles[alias];
+    if (!current) return;
+
+    const newStatus = (current.status || 'active') === 'active' ? 'paused' : 'active';
+
     const res = await fetch(`${API}/api/profiles/${encodeURIComponent(alias)}`, {
       method:  'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ toggle: true })
+      body:    JSON.stringify({ status: newStatus })
     });
     if (!res.ok) throw new Error(res.statusText);
     loadProfiles();
+    loadDashboard();
   } catch (err) {
     alert('Erro ao alternar status: ' + err.message);
   }
 }
 
-async function changeDay(alias, currentDay) {
-  const newDay = prompt(`Novo dia para "${alias}" (0–7):`, currentDay);
+function changeDay(alias, currentDay) {
+  // Build day options list
+  const dayOptions = Object.entries(DAY_LABELS)
+    .filter(([k]) => parseInt(k) <= 6)
+    .map(([k, label]) => {
+      const num = parseInt(k);
+      const current = num === currentDay ? ' ← atual' : '';
+      return `${num}. ${label}${current}`;
+    }).join('\n');
+
+  const newDay = prompt(`Alterar dia de "${alias}":\n\n${dayOptions}\n\nDigite o número (0-6):`, currentDay);
   if (newDay === null) return;
   const day = parseInt(newDay, 10);
-  if (isNaN(day) || day < 0 || day > 7) {
-    alert('Dia inválido. Use um número entre 0 e 7.');
+  if (isNaN(day) || day < 0 || day > 6) {
+    alert('Dia inválido. Use um número entre 0 e 6.');
     return;
   }
 
-  try {
-    const res = await fetch(`${API}/api/profiles/${encodeURIComponent(alias)}`, {
-      method:  'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ currentDay: day })
-    });
+  fetch(`${API}/api/profiles/${encodeURIComponent(alias)}`, {
+    method:  'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ currentDay: day })
+  }).then(res => {
     if (!res.ok) throw new Error(res.statusText);
     loadProfiles();
-  } catch (err) {
+    loadDashboard();
+  }).catch(err => {
     alert('Erro ao alterar dia: ' + err.message);
-  }
+  });
 }
 
 async function deleteProfile(alias) {
@@ -438,40 +456,100 @@ async function loadConfig() {
   }
 }
 
+const CONFIG_LABELS = {
+  'adspower.apiUrl': 'URL da API do AdsPower',
+  'likes.min': 'Curtidas mínimas',
+  'likes.max': 'Curtidas máximas',
+  'friends.max': 'Amigos máximo por dia',
+  'groups.min': 'Grupos mínimo',
+  'groups.max': 'Grupos máximo',
+  'reels.durationMin': 'Reels duração mínima (min)',
+  'reels.durationMax': 'Reels duração máxima (min)',
+  'live.duration': 'Live duração (min)',
+  'follows.max': 'Seguir páginas máximo por dia',
+  'marketplace.maxTotal': 'Marketplace máximo no total',
+  'session.lazyDayChance': 'Chance de dia preguiçoso (0-1)',
+  'session.startTimeVarianceMin': 'Variância de horário (min)',
+  'session.delayBetweenActions.min': 'Delay entre ações mín (seg)',
+  'session.delayBetweenActions.max': 'Delay entre ações máx (seg)',
+  'session.longPause.min': 'Pausa longa mín (seg)',
+  'session.longPause.max': 'Pausa longa máx (seg)',
+  'session.longPauseChance': 'Chance de pausa longa (0-1)',
+  'mouse.clickDelay.min': 'Delay de clique mín (ms)',
+  'mouse.clickDelay.max': 'Delay de clique máx (ms)',
+  'retry.elementNotFound': 'Retentativas elemento',
+  'retry.adspowerReconnect': 'Retentativas AdsPower',
+  'retry.pageLoad': 'Retentativas carregamento',
+};
+
+const SECTION_LABELS = {
+  adspower: 'AdsPower',
+  likes: 'Curtidas',
+  friends: 'Amigos',
+  groups: 'Grupos',
+  reels: 'Reels',
+  live: 'Lives',
+  follows: 'Seguir Páginas',
+  marketplace: 'Marketplace',
+  session: 'Sessão',
+  mouse: 'Mouse',
+  retry: 'Retentativas',
+  postTemplates: 'Templates de Post',
+};
+
+function flattenConfig(obj, prefix = '') {
+  const result = [];
+  for (const [key, value] of Object.entries(obj)) {
+    const fullKey = prefix ? `${prefix}.${key}` : key;
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      result.push(...flattenConfig(value, fullKey));
+    } else {
+      result.push({ key: fullKey, value });
+    }
+  }
+  return result;
+}
+
 function renderConfigForm(config) {
   const grid = document.getElementById('config-form');
   if (!grid) return;
 
-  // Group config keys by prefix (e.g. "adspower.url" → "adspower")
+  const flat = flattenConfig(config);
+
+  // Group by top-level key
   const sections = {};
-  for (const [key, value] of Object.entries(config)) {
-    const parts   = key.split('.');
-    const section = parts.length > 1 ? parts[0] : 'geral';
-    const field   = parts.length > 1 ? parts.slice(1).join('.') : key;
+  for (const { key, value } of flat) {
+    const section = key.split('.')[0];
     if (!sections[section]) sections[section] = [];
-    sections[section].push({ key, field, value });
+    sections[section].push({ key, value });
   }
 
-  // Fallback: show a few defaults if config is empty
-  if (!Object.keys(sections).length) {
-    sections['geral'] = [
-      { key: 'adspowerUrl',     field: 'adspowerUrl',     value: 'http://local.adspower.net:50325' },
-      { key: 'scheduleEnabled', field: 'scheduleEnabled', value: false },
-      { key: 'maxParallel',     field: 'maxParallel',     value: 1 },
-    ];
-  }
+  grid.innerHTML = Object.entries(sections).map(([section, fields]) => {
+    const sectionName = SECTION_LABELS[section] || section;
 
-  grid.innerHTML = Object.entries(sections).map(([section, fields]) => `
-    <div class="config-section">
-      <h3>${section}</h3>
-      ${fields.map(({ key, field, value }) => `
+    // Special handling for postTemplates (array)
+    if (section === 'postTemplates') {
+      const templates = config.postTemplates || [];
+      return `<div class="config-section">
+        <h3>${sectionName}</h3>
         <div class="form-group">
-          <label>${field}</label>
-          ${renderConfigInput(key, value)}
+          <label>Templates (um por linha)</label>
+          <textarea id="cfg-postTemplates" data-config-key="postTemplates" rows="5" style="width:100%;background:#0a0a1a;color:#e0e0e0;border:1px solid #1e1e3a;border-radius:6px;padding:8px;font-family:system-ui;resize:vertical;">${templates.join('\n')}</textarea>
         </div>
-      `).join('')}
-    </div>
-  `).join('');
+      </div>`;
+    }
+
+    return `<div class="config-section">
+      <h3>${sectionName}</h3>
+      ${fields.map(({ key, value }) => {
+        const label = CONFIG_LABELS[key] || key.split('.').slice(1).join(' ');
+        return `<div class="form-group">
+          <label>${label}</label>
+          ${renderConfigInput(key, value)}
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
 }
 
 function renderConfigInput(key, value) {
@@ -494,18 +572,25 @@ async function saveConfig() {
   inputs.forEach(el => {
     const key = el.dataset.configKey;
     let val   = el.value;
+
+    // Handle postTemplates textarea
+    if (key === 'postTemplates') {
+      payload.postTemplates = val.split('\n').map(s => s.trim()).filter(Boolean);
+      return;
+    }
+
     if (val === 'true')  val = true;
     if (val === 'false') val = false;
     if (!isNaN(val) && val !== '' && typeof val !== 'boolean') val = Number(val);
 
-    // Rebuild nested object if key has dots
+    // Rebuild nested object
     const parts = key.split('.');
-    if (parts.length === 1) {
-      payload[key] = val;
-    } else {
-      if (!payload[parts[0]]) payload[parts[0]] = {};
-      payload[parts[0]][parts.slice(1).join('.')] = val;
+    let obj = payload;
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (!obj[parts[i]]) obj[parts[i]] = {};
+      obj = obj[parts[i]];
     }
+    obj[parts[parts.length - 1]] = val;
   });
 
   try {

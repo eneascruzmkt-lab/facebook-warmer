@@ -301,7 +301,7 @@ async function runSingleAction() {
 
   const [alias, profileData] = entries[pIdx];
 
-  const actionNames = ['feed', 'like', 'reels', 'live', 'friends', 'groups', 'marketplace'];
+  const actionNames = ['feed', 'like', 'reels', 'live', 'friends', 'groups', 'marketplace', 'follow'];
   console.log('\n  Ações:');
   actionNames.forEach((a, i) => console.log(`  ${i + 1}. ${a}`));
   const aChoice = await askQuestion('\n  Número da ação: ');
@@ -334,6 +334,7 @@ async function runSingleAction() {
       groups: () => require('./src/actions/join-groups').joinGroups(page, cursor, logger),
       marketplace: () => require('./src/actions/browse-marketplace').browseMarketplace(page, cursor, logger),
       feed: () => require('./src/actions/scroll-feed').scrollFeed(page, cursor, logger),
+      follow: () => require('./src/actions/follow-pages').followPages(page, cursor, logger),
     };
 
     logger.setTotalActions(1);
