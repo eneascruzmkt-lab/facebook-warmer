@@ -610,6 +610,9 @@ const CONFIG_TEMPLATES = [
       friends: { max: 2 },
       groups: { min: 0, max: 1 },
       follows: { max: 1 },
+      comments: { max: 1 },
+      shares: { max: 0 },
+      stories: { max: 0 },
       reels: { durationMin: 10, durationMax: 15 },
       live: { duration: 120 },
       marketplace: { maxTotal: 1 },
@@ -633,6 +636,9 @@ const CONFIG_TEMPLATES = [
       friends: { max: 5 },
       groups: { min: 1, max: 2 },
       follows: { max: 3 },
+      comments: { max: 3 },
+      shares: { max: 1 },
+      stories: { max: 1 },
       reels: { durationMin: 15, durationMax: 25 },
       live: { duration: 120 },
       marketplace: { maxTotal: 2 },
@@ -656,6 +662,9 @@ const CONFIG_TEMPLATES = [
       friends: { max: 8 },
       groups: { min: 1, max: 3 },
       follows: { max: 5 },
+      comments: { max: 5 },
+      shares: { max: 2 },
+      stories: { max: 2 },
       reels: { durationMin: 20, durationMax: 35 },
       live: { duration: 60 },
       marketplace: { maxTotal: 3 },
@@ -688,6 +697,9 @@ function renderTemplates(currentConfig) {
         <div class="template-stat"><span>Amigos/dia</span><span>ate ${tpl.config.friends.max}</span></div>
         <div class="template-stat"><span>Grupos</span><span>${tpl.config.groups.min}-${tpl.config.groups.max}</span></div>
         <div class="template-stat"><span>Seguir</span><span>ate ${tpl.config.follows.max}</span></div>
+        <div class="template-stat"><span>Comentarios</span><span>ate ${tpl.config.comments.max}</span></div>
+        <div class="template-stat"><span>Compartilhar</span><span>ate ${tpl.config.shares.max}</span></div>
+        <div class="template-stat"><span>Stories</span><span>ate ${tpl.config.stories.max}</span></div>
         <div class="template-stat"><span>Reels</span><span>${tpl.config.reels.durationMin}-${tpl.config.reels.durationMax}min</span></div>
         <div class="template-stat"><span>Live</span><span>${tpl.config.live.duration}min</span></div>
       </div>
@@ -708,6 +720,7 @@ async function applyTemplate(index) {
     const merged = {
       adspower: current.adspower || { apiUrl: 'http://local.adspower.net:50325' },
       ...tpl.config,
+      telegram: current.telegram || { botToken: '', chatId: '' },
       postTemplates: current.postTemplates || ['Bom dia! Mais um dia de trabalho.']
     };
 
