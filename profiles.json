@@ -1,11 +1,12 @@
 {
-  "test01": {
-    "adspowerId": "YOUR_ADSPOWER_PROFILE_ID",
+  "p001": {
+    "adspowerId": "k1au8ng6",
     "email": "",
     "emailPassword": "",
     "twoFactorSecret": "",
     "createdAt": "2026-03-27",
     "currentDay": 0,
-    "notes": "perfil de teste"
+    "status": "active",
+    "notes": ""
   }
 }

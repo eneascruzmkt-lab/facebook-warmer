@@ -1,6 +1,7 @@
 const yargs = require('yargs');
 const { startBrowser, stopBrowser } = require('./src/adspower');
-const { getProfile, updateProfile } = require('./src/profiles');
+const { getProfile, updateProfile, loadProfiles, saveProfiles } = require('./src/profiles');
+const chalk = require('chalk');
 const { acquireLock, releaseLock, setupGracefulShutdown } = require('./src/lock');
 const { Logger, saveScreenshot } = require('./src/logger');
 const { createHumanCursor } = require('./src/human');
@@ -148,6 +149,113 @@ async function runSingleAction(actionName, argv) {
   }
 }
 
+// Flow: pipeline management
+async function runFlow(argv) {
+  const profiles = loadProfiles();
+  const active = Object.entries(profiles)
+    .filter(([, p]) => p.status === 'active' && p.currentDay <= 6)
+    .sort((a, b) => a[1].currentDay - b[1].currentDay);
+
+  if (active.length === 0) {
+    console.log(chalk.yellow('\n  Nenhum perfil ativo no pipeline.\n'));
+    console.log(chalk.gray('  Use: node index.js flow --add --adspower-id <ID>\n'));
+    return;
+  }
+
+  // Pick the profile with the lowest currentDay (most behind)
+  const [alias, data] = active[0];
+  const day = data.currentDay;
+
+  if (day > 6) {
+    console.log(chalk.green(`\n  Todos os perfis completaram o processo!\n`));
+    return;
+  }
+
+  console.log(chalk.cyan(`\n  Pipeline: ${alias} → Dia ${day}`));
+  console.log(chalk.gray(`  (${active.length} perfis ativos)\n`));
+
+  await runDay({ day, profile: alias, dryRun: false });
+}
+
+async function flowAdd(argv) {
+  const profiles = loadProfiles();
+  const adspowerId = argv.adspowerId;
+
+  if (!adspowerId) {
+    console.log(chalk.red('  Erro: --adspower-id é obrigatório'));
+    return;
+  }
+
+  // Auto-generate alias: p001, p002, etc
+  const existingNums = Object.keys(profiles)
+    .filter(k => k.match(/^p\d+$/))
+    .map(k => parseInt(k.replace('p', '')));
+  const nextNum = existingNums.length > 0 ? Math.max(...existingNums) + 1 : 1;
+  const alias = `p${String(nextNum).padStart(3, '0')}`;
+
+  profiles[alias] = {
+    adspowerId: adspowerId,
+    email: '',
+    emailPassword: '',
+    twoFactorSecret: '',
+    createdAt: new Date().toISOString().split('T')[0],
+    currentDay: 0,
+    status: 'active',
+    notes: ''
+  };
+
+  saveProfiles(profiles);
+  console.log(chalk.green(`\n  Perfil ${alias} adicionado (AdsPower: ${adspowerId})`));
+  console.log(chalk.gray(`  Próximo passo: node index.js flow\n`));
+}
+
+function flowStatus() {
+  const profiles = loadProfiles();
+  const entries = Object.entries(profiles);
+
+  if (entries.length === 0) {
+    console.log(chalk.yellow('\n  Nenhum perfil cadastrado.\n'));
+    return;
+  }
+
+  const dayLabels = {
+    0: 'Criar email',
+    1: 'Criar perfil (celular)',
+    2: 'Aquecimento PC',
+    3: '2FA + aquecimento',
+    4: 'Criar página + social',
+    5: 'BM + aquecimento',
+    6: 'Segunda BM',
+    7: 'Concluído'
+  };
+
+  console.log(chalk.cyan('\n  ┌────────┬──────────────┬─────┬──────────────────────────┐'));
+  console.log(chalk.cyan('  │') + chalk.bold(' Perfil ') + chalk.cyan('│') + chalk.bold(' AdsPower ID  ') + chalk.cyan('│') + chalk.bold(' Dia ') + chalk.cyan('│') + chalk.bold(' Próximo passo            ') + chalk.cyan('│'));
+  console.log(chalk.cyan('  ├────────┼──────────────┼─────┼──────────────────────────┤'));
+
+  for (const [alias, data] of entries) {
+    const day = data.currentDay || 0;
+    const status = data.status || 'active';
+    const label = day > 6 ? chalk.green('Concluído') : (dayLabels[day] || '?');
+    const statusIcon = status === 'active' ? '' : chalk.red(' [pausado]');
+    const dayStr = day > 6 ? chalk.green(' ✓  ') : ` ${day}   `;
+
+    console.log(
+      chalk.cyan('  │') +
+      ` ${alias}  `.padEnd(8) +
+      chalk.cyan('│') +
+      ` ${data.adspowerId}`.padEnd(14) +
+      chalk.cyan('│') +
+      dayStr +
+      chalk.cyan('│') +
+      ` ${label}${statusIcon}`.padEnd(26) +
+      chalk.cyan('│')
+    );
+  }
+
+  console.log(chalk.cyan('  └────────┴──────────────┴─────┴──────────────────────────┘\n'));
+}
+
 yargs
   .command('$0', 'Run warming for a profile day', (y) => {
     y.option('day', { type: 'number', describe: 'Day number (0-6)', demandOption: true });
@@ -175,5 +283,26 @@ yargs
   .command('feed', 'Run only scroll-feed action', (y) => {
     y.option('profile', { type: 'string', demandOption: true });
   }, (argv) => runSingleAction('feed', argv))
+  .command('flow', 'Pipeline: roda o próximo perfil automaticamente', (y) => {
+    y.option('add', { type: 'boolean', describe: 'Adicionar novo perfil ao pipeline', default: false });
+    y.option('status', { type: 'boolean', describe: 'Ver status de todos os perfis', default: false });
+    y.option('adspower-id', { type: 'string', describe: 'ID do perfil no AdsPower (usado com --add)' });
+    y.option('pause', { type: 'string', describe: 'Pausar um perfil (alias)' });
+    y.option('resume', { type: 'string', describe: 'Retomar um perfil (alias)' });
+  }, async (argv) => {
+    if (argv.status) {
+      flowStatus();
+    } else if (argv.add) {
+      await flowAdd(argv);
+    } else if (argv.pause) {
+      updateProfile(argv.pause, { status: 'paused' });
+      console.log(chalk.yellow(`\n  Perfil ${argv.pause} pausado.\n`));
+    } else if (argv.resume) {
+      updateProfile(argv.resume, { status: 'active' });
+      console.log(chalk.green(`\n  Perfil ${argv.resume} retomado.\n`));
+    } else {
+      await runFlow(argv);
+    }
+  })
   .help()
   .argv;
